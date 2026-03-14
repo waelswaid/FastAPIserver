@@ -1,9 +1,7 @@
 # app/models/task.py
 
 from sqlalchemy import Column, String, Boolean
-from sqlalchemy.orm import declarative_base
-
-Base = declarative_base()
+from app.models.base import Base
 
 
 class Task(Base):
@@ -11,3 +9,6 @@ class Task(Base):
 
     task = Column(String(200), primary_key = True)
     completed = Column(Boolean, default=False)
+
+
+

@@ -1,0 +1,1 @@
+from app.utils.security.password_hash import hash_password
