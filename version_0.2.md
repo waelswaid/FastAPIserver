@@ -73,6 +73,31 @@ Uses `pwdlib` with its recommended algorithm (Argon2/bcrypt). Raw passwords are 
 
 ### `app/models/task.py`
 - Now imports `Base` from `app.models.base` instead of calling `declarative_base()` inline.
+- Updated to match the new `tasks` table structure:
+  - Added `id` — `BigInteger` primary key (DB-generated via sequence/BIGSERIAL)
+  - `task` — no longer the primary key; now `nullable=False`
+  - `completed` — now `nullable=False`
+  - Added `user_id` — UUID foreign key referencing `users.id`, `nullable=False`
+
+### `app/schemas/task_model.py`
+- Replaced the single `Task` schema with three purpose-specific schemas:
+  - `TaskCreate` — client input for creating a task (`task: str`, `user_id: uuid.UUID`). No `id` or `completed` — the DB and app set those.
+  - `TaskComplete` — client input for completing a task (`id: int` only).
+  - `TaskRead` — response shape for all task endpoints (`id`, `task`, `completed`, `user_id`). Has `from_attributes=True` for ORM serialization.
+
+### `app/repositories/task_repository.py`
+- `create_task` now accepts `user_id` and passes it to the ORM object.
+- `set_complete` now filters by `id` (integer) instead of task name, and raises a `404` if the task is not found.
+
+### `app/services/task_services.py`
+- Updated to use `TaskCreate` and `TaskComplete` schemas.
+- `create_task` passes `user_id` through to the repository.
+- `set_complete` passes `task.id` instead of `task.title`.
+
+### `app/api/routes/task_routes.py`
+- Updated imports to use `TaskCreate`, `TaskComplete`, and `TaskRead`.
+- Added `response_model=list[TaskRead]` to `GET /api/tasks/get`.
+- Added `response_model=TaskRead` to `POST /api/tasks/create`.
 
 ### `app/database/session.py`
 - `get_db()` now includes an explicit `except Exception: db.rollback(); raise` block before the `finally` close, ensuring transactions are rolled back cleanly on errors.
