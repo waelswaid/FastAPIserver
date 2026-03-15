@@ -8,6 +8,16 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     ENVIRONMENT: str = "development"  # set to "production" in prod
 
+    # Mailgun
+    MAILGUN_API_KEY: str
+    MAILGUN_DOMAIN: str
+    MAILGUN_FROM_EMAIL: str
+
+    # Password reset
+    APP_BASE_URL: str = "http://localhost:8000"
+    PASSWORD_RESET_EXPIRE_MINUTES: int = 15
+    EMAIL_VERIFICATION_EXPIRE_MINUTES: int = 1440
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8"

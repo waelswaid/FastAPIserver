@@ -20,6 +20,8 @@ class JWTConfig:
     algorithm: str = "HS256"
     access_token_expiry_minutes: int = 15
     refresh_token_expiry_days: int = 1
+    password_reset_token_expiry_minutes: int = 15
+    email_verification_token_expiry_minutes: int = 1440
 
 
 class JWTUtility:
@@ -112,4 +114,34 @@ class JWTUtility:
         payload = self._decode_token(token)
         if payload.get("type") != "refresh":
             raise ValueError("Invalid token type: expected refresh token")
+        return payload
+
+    # public method to create a short-lived password reset token
+    def create_password_reset_token(self, subject: str) -> str:
+        return self._create_token(
+            subject=subject,
+            token_type="password_reset",
+            expires_delta=timedelta(minutes=self.config.password_reset_token_expiry_minutes),
+        )
+
+    # public decode and type verification for password reset tokens
+    def decode_password_reset_token(self, token: str) -> Dict[str, Any]:
+        payload = self._decode_token(token)
+        if payload.get("type") != "password_reset":
+            raise ValueError("Invalid token type: expected password reset token")
+        return payload
+
+    # public method to create a short-lived email verification token
+    def create_email_verification_token(self, subject: str) -> str:
+        return self._create_token(
+            subject=subject,
+            token_type="email_verification",
+            expires_delta=timedelta(minutes=self.config.email_verification_token_expiry_minutes),
+        )
+
+    # public decode and type verification for email verification tokens
+    def decode_email_verification_token(self, token: str) -> Dict[str, Any]:
+        payload = self._decode_token(token)
+        if payload.get("type") != "email_verification":
+            raise ValueError("Invalid token type: expected email verification token")
         return payload

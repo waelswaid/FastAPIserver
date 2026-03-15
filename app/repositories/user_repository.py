@@ -34,3 +34,15 @@ def find_user_by_id(db: Session, id_in: uuid.UUID) -> Optional[User]:
     return db.query(User).filter(User.id == id_in).first()
 
 
+# update a user's password hash
+def update_password(db: Session, user: User, new_hash: str) -> None:
+    user.password_hash = new_hash
+    db.commit()
+
+
+# mark a user's email as verified
+def verify_user(db: Session, user: User) -> None:
+    user.is_verified = True
+    db.commit()
+
+
