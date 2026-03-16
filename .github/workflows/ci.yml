@@ -7,12 +7,32 @@ on:
     branches: [main]
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Install flake8
+        run: pip install flake8
+
+      - name: Lint with flake8
+        run: |
+          # stop the build if there are Python syntax errors or undefined names
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          # warnings only — don't fail the build
+          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics --exclude=migrations,test-client
+
   test:
     runs-on: ubuntu-latest
 
     services:
       postgres:
-        image: postgres:18
+        image: postgres:17
         env:
           POSTGRES_DB: fastapiapp_test
           POSTGRES_USER: postgres
