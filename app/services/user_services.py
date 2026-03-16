@@ -2,14 +2,18 @@ from app.schemas.users_schema import UserCreate
 from sqlalchemy.orm import Session
 from app.repositories import user_repository
 from app.services.auth_services import send_verification_email_for_user
+from app.exceptions import DuplicateEmailError
 from fastapi import HTTPException
 import requests
 
 
 def user_create(db: Session, user: UserCreate):
-    new_user = user_repository.create_user(db=db, user_in=user)
     try:
-        send_verification_email_for_user(str(new_user.id), new_user.email)
+        new_user = user_repository.create_user(db=db, user_in=user)
+    except DuplicateEmailError as e:
+        raise HTTPException(status_code=409, detail=str(e))
+    try:
+        send_verification_email_for_user(db, new_user)
     except requests.RequestException:
         raise HTTPException(
             status_code=500,

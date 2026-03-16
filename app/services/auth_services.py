@@ -1,4 +1,9 @@
-from app.repositories.user_repository import find_user_by_email, find_user_by_id, find_user_by_id_for_update, update_password, verify_user, set_password_reset_jti
+from app.repositories.user_repository import (
+    find_user_by_email, find_user_by_id, find_user_by_id_for_update,
+    update_password, update_password_via_code, verify_user,
+    set_password_reset_jti, set_email_verification_code, set_password_reset_code,
+    find_user_by_verification_code_for_update, find_user_by_reset_code_for_update,
+)
 from app.repositories.token_blacklist_repository import add_to_blacklist, is_blacklisted
 from app.utils.security.password_hash import verify_password, hash_password
 from app.utils.tokens import JWTConfig, JWTUtility
@@ -109,15 +114,21 @@ def request_password_reset(db: Session, email: str) -> None:
     if user is None or not user.is_verified:
         return
 
-    # generate the token before touching DB state
+    # generate an opaque code for the email link (never expose the JWT in the URL)
+    code = str(uuid.uuid4())
+    expires_at = datetime.now(timezone.utc) + timedelta(
+        minutes=jwt_gen.config.password_reset_token_expiry_minutes
+    )
+
+    # generate the JWT for server-side use (POST endpoint)
     reset_token = jwt_gen.create_password_reset_token(str(user.id))
     new_payload = jwt_gen.decode_password_reset_token(reset_token)
     new_jti = new_payload.get("jti")
-    new_expires_at = datetime.fromtimestamp(new_payload["exp"], tz=timezone.utc)
+    new_jti_expires_at = datetime.fromtimestamp(new_payload["exp"], tz=timezone.utc)
 
     # attempt email first — only commit state changes if it succeeds
     try:
-        send_password_reset_email(user.email, reset_token)
+        send_password_reset_email(user.email, code)
     except http_requests.RequestException as exc:
         logger.error("Failed to send password reset email: %s", exc)
         raise HTTPException(status_code=503, detail="Unable to send email. Please try again later.")
@@ -126,12 +137,17 @@ def request_password_reset(db: Session, email: str) -> None:
     if user.password_reset_jti is not None and user.password_reset_jti_expires_at is not None:
         add_to_blacklist(db, user.password_reset_jti, user.password_reset_jti_expires_at)
 
-    set_password_reset_jti(db, user, new_jti, new_expires_at)
+    set_password_reset_jti(db, user, new_jti, new_jti_expires_at)
+    set_password_reset_code(db, user, code, expires_at)
 
 
-def send_verification_email_for_user(user_id: str, email: str) -> None:
-    token = jwt_gen.create_email_verification_token(user_id)
-    send_verification_email(email, token)
+def send_verification_email_for_user(db: Session, user: "User") -> None:
+    code = str(uuid.uuid4())
+    expires_at = datetime.now(timezone.utc) + timedelta(
+        minutes=jwt_gen.config.email_verification_token_expiry_minutes
+    )
+    send_verification_email(user.email, code)
+    set_email_verification_code(db, user, code, expires_at)
 
 
 def resend_verification_email(db: Session, email: str) -> None:
@@ -141,7 +157,7 @@ def resend_verification_email(db: Session, email: str) -> None:
         return
 
     try:
-        send_verification_email_for_user(str(user.id), user.email)
+        send_verification_email_for_user(db, user)
     except http_requests.RequestException as exc:
         logger.error("Failed to send verification email: %s", exc)
         raise HTTPException(status_code=503, detail="Unable to send email. Please try again later.")
@@ -210,5 +226,36 @@ def reset_password(db: Session, token: str, new_password: str) -> None:
     add_to_blacklist(db, jti, expires_at, commit=False)
     update_password(db, user, hash_password(new_password))
 
-        
-    
+
+def verify_email_code(db: Session, code: str) -> None:
+    user = find_user_by_verification_code_for_update(db, code)
+    if user is None:
+        raise HTTPException(status_code=400, detail="Invalid or expired verification link")
+
+    if user.is_verified:
+        raise HTTPException(status_code=400, detail="Email is already verified")
+
+    if user.email_verification_code_expires_at is None or user.email_verification_code_expires_at < datetime.now(timezone.utc):
+        raise HTTPException(status_code=400, detail="Verification link has expired")
+
+    verify_user(db, user)
+
+
+def reset_password_via_code(db: Session, code: str, new_password: str) -> None:
+    user = find_user_by_reset_code_for_update(db, code)
+    if user is None:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset link")
+
+    if user.password_reset_code_expires_at is None or user.password_reset_code_expires_at < datetime.now(timezone.utc):
+        raise HTTPException(status_code=400, detail="Reset link has expired")
+
+    update_password_via_code(db, user, hash_password(new_password))
+
+
+def validate_reset_code(db: Session, code: str) -> None:
+    user = find_user_by_reset_code_for_update(db, code)
+    if user is None:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset link")
+
+    if user.password_reset_code_expires_at is None or user.password_reset_code_expires_at < datetime.now(timezone.utc):
+        raise HTTPException(status_code=400, detail="Reset link has expired")

@@ -90,14 +90,3 @@
 - `migrations/versions/0b19ff09313e_add_password_reset_jti_expires_at_to_.py` (new)
 
 ---
-
-## Remaining Known Issues
-
-1. Token exposed in URL query strings — visible in browser history, server logs, referer headers
-2. `password_reset_jti` column not indexed — full table scan on lookup
-3. Blacklist cleanup only runs at startup — `token_blacklist` table grows unbounded
-4. No password complexity validation — only min 8 / max 128 length
-5. No check that new password differs from old
-6. No audit logging for verification/reset attempts
-7. Unverified users can't reset password — no recovery path if verification expires
-8. `IntegrityError` catch in logout masks unrelated DB errors

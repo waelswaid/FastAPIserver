@@ -4,7 +4,11 @@ from app.database.session import get_db
 from app.schemas.login_request import LoginRequest
 from app.schemas.token_response import TokenResponse
 from app.schemas.password_reset_schema import ForgotPasswordRequest, ResetPasswordRequest, VerifyEmailRequest
-from app.services.auth_services import user_login, refresh_access_token, logout, jwt_gen, request_password_reset, reset_password, verify_email_token, resend_verification_email
+from app.services.auth_services import (
+    user_login, refresh_access_token, logout, jwt_gen,
+    request_password_reset, reset_password, verify_email_token, resend_verification_email,
+    verify_email_code, reset_password_via_code, validate_reset_code,
+)
 from app.api.dependencies.auth_dependency import oauth2_scheme
 from app.api.dependencies.rate_limiter import forgot_password_limiter, resend_verification_limiter, reset_password_limiter
 from app.core.config import settings
@@ -48,17 +52,17 @@ def route_forgot_password(body: ForgotPasswordRequest, db: Session = Depends(get
 
 
 @auth_router.get("/reset-password", status_code=200)
-def route_validate_reset_token(token: str):
-    try:
-        jwt_gen.decode_password_reset_token(token)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid or expired reset token")
-    return {"message": "Token is valid.", "token": token}
+def route_validate_reset_code(code: str, db: Session = Depends(get_db)):
+    validate_reset_code(db, code)
+    return {"message": "Code is valid.", "code": code}
 
 
 @auth_router.post("/reset-password", status_code=200, dependencies=[Depends(reset_password_limiter)])
 def route_reset_password(body: ResetPasswordRequest, db: Session = Depends(get_db)):
-    reset_password(db, body.token, body.new_password)
+    if body.code:
+        reset_password_via_code(db, body.code, body.new_password)
+    else:
+        reset_password(db, body.token, body.new_password)
     return {"message": "Password updated successfully."}
 
 
@@ -69,8 +73,8 @@ def route_resend_verification(body: ForgotPasswordRequest, db: Session = Depends
 
 
 @auth_router.get("/verify-email", status_code=200)
-def route_verify_email_via_link(token: str, db: Session = Depends(get_db)):
-    verify_email_token(db, token)
+def route_verify_email_via_link(code: str, db: Session = Depends(get_db)):
+    verify_email_code(db, code)
     return {"message": "Email verified successfully. You can now log in."}
 
 
