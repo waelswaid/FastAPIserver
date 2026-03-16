@@ -11,6 +11,7 @@ from app.utils.email import send_password_reset_email, send_verification_email
 from app.core.config import settings
 from app.schemas.token_response import TokenResponse
 from app.schemas.login_request import LoginRequest
+from app.models.user import User
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
@@ -141,7 +142,7 @@ def request_password_reset(db: Session, email: str) -> None:
     set_password_reset_code(db, user, code, expires_at)
 
 
-def send_verification_email_for_user(db: Session, user: "User") -> None:
+def send_verification_email_for_user(db: Session, user: User) -> None:
     code = str(uuid.uuid4())
     expires_at = datetime.now(timezone.utc) + timedelta(
         minutes=jwt_gen.config.email_verification_token_expiry_minutes
