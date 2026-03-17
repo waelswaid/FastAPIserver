@@ -45,14 +45,18 @@ jobs:
           pip install -r requirements-prod.txt
           pip install pytest httpx
 
+      - name: Create test database
+        run: PGPASSWORD=postgres psql -h localhost -U postgres -c "CREATE DATABASE fastapiapp_test;"
+
       - name: Run migrations
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/app
           JWT_SECRET_KEY: test-secret-key
           MAILGUN_API_KEY: test-key
           MAILGUN_DOMAIN: test.example.com
           MAILGUN_FROM_EMAIL: test@example.com
-        run: alembic upgrade head
+        run: |
+          DATABASE_URL=postgresql://postgres:postgres@localhost:5432/app alembic upgrade head
+          DATABASE_URL=postgresql://postgres:postgres@localhost:5432/fastapiapp_test alembic upgrade head
 
       - name: Run tests
         env:
