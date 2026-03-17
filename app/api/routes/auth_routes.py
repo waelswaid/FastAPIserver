@@ -9,7 +9,8 @@ from app.services.auth_services import (
     request_password_reset, reset_password, verify_email_token, resend_verification_email,
     verify_email_code, reset_password_via_code, validate_reset_code,
 )
-from app.api.dependencies.auth_dependency import oauth2_scheme
+from app.api.dependencies.auth_dependency import oauth2_scheme, get_current_user
+from app.models.user import User
 from app.api.dependencies.rate_limiter import (
     forgot_password_limiter, resend_verification_limiter, reset_password_limiter,
     login_limiter, login_global_limiter, refresh_limiter,
@@ -20,6 +21,16 @@ from typing import Optional
 
 
 auth_router = APIRouter(prefix="/auth", tags=["auth"])
+
+
+@auth_router.get("/validate-token")
+def validate_token(current_user: User = Depends(get_current_user)):
+    return {
+        "user_id": str(current_user.id),
+        "email": current_user.email,
+        "name": current_user.name,
+        "is_verified": current_user.is_verified,
+    }
 
 
 @auth_router.post("/login", response_model=TokenResponse, dependencies=[Depends(login_limiter), Depends(login_global_limiter)])
