@@ -14,6 +14,7 @@ class UserCreate(UserBase):
 class UserRead(UserBase):
     model_config = ConfigDict(from_attributes=True)
     id : uuid.UUID
+    role: str
     created_at: datetime
 
     

@@ -6,7 +6,7 @@ from app.models.user import User
 from app.schemas.users_schema import UserCreate, UserRead
 from app.utils.security import hash_password
 from app.exceptions import DuplicateEmailError
-from typing import Optional
+from typing import Optional, Sequence
 
 # creates a new user
 def create_user(db: Session, user_in: UserCreate) -> User:
@@ -96,6 +96,24 @@ def update_password_via_code(db: Session, user: User, new_hash: str) -> None:
     user.password_reset_code = None
     user.password_reset_code_expires_at = None
     db.commit()
+
+
+def update_user_role(db: Session, user: User, new_role: str) -> None:
+    user.role = new_role
+    user.role_changed_at = datetime.now(timezone.utc)
+    db.commit()
+
+
+def list_users(
+    db: Session,
+    role_filter: Optional[str] = None,
+    skip: int = 0,
+    limit: int = 50,
+) -> Sequence[User]:
+    query = db.query(User)
+    if role_filter is not None:
+        query = query.filter(User.role == role_filter)
+    return query.offset(skip).limit(limit).all()
 
 
 

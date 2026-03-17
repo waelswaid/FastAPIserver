@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.database.session import get_db
 from app.models.user import User
 from datetime import datetime, timezone
+from typing import Callable
 import uuid
 from app.services.auth_services import jwt_gen
 from app.repositories.user_repository import find_user_by_id
@@ -45,4 +46,18 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         if token_issued_at < user.password_changed_at:
             raise credentials_error
 
+    # reject tokens issued before the last role change
+    if iat is not None and user.role_changed_at is not None:
+        token_issued_at = datetime.fromtimestamp(iat, tz=timezone.utc)
+        if token_issued_at < user.role_changed_at:
+            raise credentials_error
+
     return user
+
+
+def require_role(*allowed_roles: str) -> Callable:
+    def role_checker(current_user: User = Depends(get_current_user)) -> User:
+        if current_user.role not in allowed_roles:
+            raise HTTPException(status_code=403, detail="Insufficient permissions")
+        return current_user
+    return role_checker

@@ -42,8 +42,9 @@ def user_login(db: Session, login_data: LoginRequest) -> tuple[str, str]:
     if not user.is_verified:
         raise HTTPException(status_code=403, detail="Please verify your email before logging in.")
 
-    access_token = jwt_gen.create_access_token(str(user.id))
-    refresh_token = jwt_gen.create_refresh_token(str(user.id))
+    role_claims = {"role": user.role}
+    access_token = jwt_gen.create_access_token(str(user.id), additional_claims=role_claims)
+    refresh_token = jwt_gen.create_refresh_token(str(user.id), additional_claims=role_claims)
     return access_token, refresh_token
 
 
@@ -76,7 +77,13 @@ def refresh_access_token(db: Session, refresh_token: str) -> TokenResponse:
         if datetime.fromtimestamp(iat, tz=timezone.utc) < user.password_changed_at:
             raise HTTPException(status_code=401, detail="Invalid or expired refresh token")
 
-    access_token = jwt_gen.create_access_token(str(user.id))
+    # reject refresh tokens issued before the last role change
+    if iat is not None and user.role_changed_at is not None:
+        if datetime.fromtimestamp(iat, tz=timezone.utc) < user.role_changed_at:
+            raise HTTPException(status_code=401, detail="Invalid or expired refresh token")
+
+    role_claims = {"role": user.role}
+    access_token = jwt_gen.create_access_token(str(user.id), additional_claims=role_claims)
     return TokenResponse(access_token=access_token, token_type="bearer")
 
 

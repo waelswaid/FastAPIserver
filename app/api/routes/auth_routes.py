@@ -30,6 +30,7 @@ def validate_token(current_user: User = Depends(get_current_user)):
         "email": current_user.email,
         "name": current_user.name,
         "is_verified": current_user.is_verified,
+        "role": current_user.role,
     }
 
 

@@ -39,6 +39,17 @@ class User(Base):
         DateTime(timezone=True),
         nullable=True,
     )
+    role: Mapped[str] = mapped_column(
+        String(50),
+        nullable=False,
+        default="user",
+        server_default=text("'user'"),
+        index=True,
+    )
+    role_changed_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
     email_verification_code: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     email_verification_code_expires_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True),

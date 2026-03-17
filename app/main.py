@@ -2,6 +2,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, Response
 from app.api.routes.user_routes import user_router
 from app.api.routes.auth_routes import auth_router
+from app.api.routes.admin_routes import admin_router
 from app.api.routes.health_routes import health_router
 from app.database.session import SessionLocal
 from app.repositories.token_blacklist_repository import cleanup_expired_tokens
@@ -41,3 +42,4 @@ async def rate_limit_headers_middleware(request: Request, call_next) -> Response
 app.include_router(health_router)
 app.include_router(user_router, prefix="/api")
 app.include_router(auth_router, prefix="/api")
+app.include_router(admin_router, prefix="/api/admin")
