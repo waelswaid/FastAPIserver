@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     MAILGUN_API_KEY: str
     MAILGUN_DOMAIN: str
     MAILGUN_FROM_EMAIL: str
+    MAILGUN_API_URL: str = "https://api.mailgun.net/v3"
 
     # Password reset
     APP_BASE_URL: str = "http://localhost:8000"

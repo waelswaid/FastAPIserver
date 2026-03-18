@@ -6,7 +6,7 @@ def send_password_reset_email(to_email: str, code: str) -> None:
     reset_link = f"{settings.APP_BASE_URL}/api/auth/reset-password?code={code}"
 
     response = requests.post(
-        f"https://api.mailgun.net/v3/{settings.MAILGUN_DOMAIN}/messages",
+        f"{settings.MAILGUN_API_URL}/{settings.MAILGUN_DOMAIN}/messages",
         auth=("api", settings.MAILGUN_API_KEY),
         data={
             "from": settings.MAILGUN_FROM_EMAIL,
@@ -28,7 +28,7 @@ def send_verification_email(to_email: str, code: str) -> None:
     verification_link = f"{settings.APP_BASE_URL}/api/auth/verify-email?code={code}"
 
     response = requests.post(
-        f"https://api.mailgun.net/v3/{settings.MAILGUN_DOMAIN}/messages",
+        f"{settings.MAILGUN_API_URL}/{settings.MAILGUN_DOMAIN}/messages",
         auth=("api", settings.MAILGUN_API_KEY),
         data={
             "from": settings.MAILGUN_FROM_EMAIL,
