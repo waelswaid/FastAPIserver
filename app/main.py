@@ -1,5 +1,8 @@
+import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, Response
+
+logging.basicConfig(level=logging.INFO)
 from app.api.routes.user_routes import user_router
 from app.api.routes.auth_routes import auth_router
 from app.api.routes.admin_routes import admin_router
