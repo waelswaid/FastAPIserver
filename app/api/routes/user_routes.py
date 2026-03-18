@@ -27,7 +27,7 @@ def get_me(current_user: User = Depends(get_current_user)):
 
 @user_router.patch("/users/me", response_model=UserRead)
 def update_me(body: UserUpdate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    update_user_profile(db, current_user, name=body.name)
+    update_user_profile(db, current_user, first_name=body.first_name, last_name=body.last_name)
     logger.info("audit: event=profile_updated user_id=%s", current_user.id)
     db.refresh(current_user)
     return current_user

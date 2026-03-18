@@ -14,6 +14,7 @@ from app.models.base import Base
 # Add a new import here whenever a new ORM model file is created.
 import app.models.user                  # noqa: F401
 import app.models.token_blacklist       # noqa: F401
+import app.models.pending_action        # noqa: F401
 
 # ---------------------------------------------------------------------------
 # Standard Alembic setup

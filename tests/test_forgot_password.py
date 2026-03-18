@@ -1,5 +1,8 @@
 import requests
 
+from app.models.pending_action import PendingAction
+from app.services.auth_services import ACTION_PASSWORD_RESET_CODE, ACTION_PASSWORD_RESET_JTI
+
 
 # Verified user's email triggers a reset email (200, email sent)
 def test_forgot_password_existing_email(client, verified_user, mock_send_email):
@@ -51,15 +54,25 @@ def test_forgot_password_second_request_invalidates_first_token(
     user, _ = verified_user
 
     client.post("/api/auth/forgot-password", json={"email": user.email})
-    db_session.refresh(user)
-    first_code = user.password_reset_code
-    first_jti = user.password_reset_jti
-    assert first_code is not None
-    assert first_jti is not None
+    first_code_action = db_session.query(PendingAction).filter(
+        PendingAction.user_id == user.id,
+        PendingAction.action_type == ACTION_PASSWORD_RESET_CODE,
+    ).first()
+    first_jti_action = db_session.query(PendingAction).filter(
+        PendingAction.user_id == user.id,
+        PendingAction.action_type == ACTION_PASSWORD_RESET_JTI,
+    ).first()
+    assert first_code_action is not None
+    assert first_jti_action is not None
+    first_code = first_code_action.code
 
     client.post("/api/auth/forgot-password", json={"email": user.email})
-    db_session.refresh(user)
-    second_code = user.password_reset_code
+    db_session.expire_all()
+    second_code_action = db_session.query(PendingAction).filter(
+        PendingAction.user_id == user.id,
+        PendingAction.action_type == ACTION_PASSWORD_RESET_CODE,
+    ).first()
+    second_code = second_code_action.code
     assert second_code != first_code
 
     # First code no longer works

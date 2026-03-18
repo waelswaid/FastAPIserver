@@ -1,15 +1,20 @@
 from datetime import datetime, timezone, timedelta
 
 from app.models.token_blacklist import TokenBlacklist
-from app.services.auth_services import jwt_gen
+from app.models.pending_action import PendingAction
+from app.services.auth_services import jwt_gen, ACTION_EMAIL_VERIFICATION_CODE
 
 
 # Valid verification code sets is_verified=True (200)
 def test_verify_via_code_success(client, unverified_user, db_session):
     user, _ = unverified_user
     code = "test-verification-code"
-    user.email_verification_code = code
-    user.email_verification_code_expires_at = datetime.now(timezone.utc) + timedelta(hours=24)
+    db_session.add(PendingAction(
+        user_id=user.id,
+        action_type=ACTION_EMAIL_VERIFICATION_CODE,
+        code=code,
+        expires_at=datetime.now(timezone.utc) + timedelta(hours=24),
+    ))
     db_session.flush()
 
     resp = client.get(f"/api/auth/verify-email?code={code}")
@@ -28,8 +33,12 @@ def test_verify_via_code_invalid(client):
 def test_verify_via_code_expired(client, unverified_user, db_session):
     user, _ = unverified_user
     code = "expired-verification-code"
-    user.email_verification_code = code
-    user.email_verification_code_expires_at = datetime.now(timezone.utc) - timedelta(minutes=1)
+    db_session.add(PendingAction(
+        user_id=user.id,
+        action_type=ACTION_EMAIL_VERIFICATION_CODE,
+        code=code,
+        expires_at=datetime.now(timezone.utc) - timedelta(minutes=1),
+    ))
     db_session.flush()
 
     resp = client.get(f"/api/auth/verify-email?code={code}")
@@ -40,8 +49,12 @@ def test_verify_via_code_expired(client, unverified_user, db_session):
 def test_verify_via_code_already_verified(client, verified_user, db_session):
     user, _ = verified_user
     code = "already-verified-code"
-    user.email_verification_code = code
-    user.email_verification_code_expires_at = datetime.now(timezone.utc) + timedelta(hours=24)
+    db_session.add(PendingAction(
+        user_id=user.id,
+        action_type=ACTION_EMAIL_VERIFICATION_CODE,
+        code=code,
+        expires_at=datetime.now(timezone.utc) + timedelta(hours=24),
+    ))
     db_session.flush()
 
     resp = client.get(f"/api/auth/verify-email?code={code}")
@@ -109,7 +122,7 @@ def test_verify_via_token_blacklisted_jti(client, unverified_user, db_session):
 def test_verify_then_login_works(client, db_session):
     client.post(
         "/api/users/create",
-        json={"name": "Flow", "email": "flow@example.com", "password": "flowpass1234"},
+        json={"first_name": "Flow", "last_name": "User", "email": "flow@example.com", "password": "flowpass1234"},
     )
 
     login_resp = client.post(
@@ -120,8 +133,12 @@ def test_verify_then_login_works(client, db_session):
 
     from app.models.user import User
     user = db_session.query(User).filter(User.email == "flow@example.com").first()
-    code = user.email_verification_code
-    assert code is not None
+    action = db_session.query(PendingAction).filter(
+        PendingAction.user_id == user.id,
+        PendingAction.action_type == ACTION_EMAIL_VERIFICATION_CODE,
+    ).first()
+    assert action is not None
+    code = action.code
 
     verify_resp = client.get(f"/api/auth/verify-email?code={code}")
     assert verify_resp.status_code == 200

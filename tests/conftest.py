@@ -1,7 +1,7 @@
 import os
 
 # Set test environment variables BEFORE any app imports
-os.environ["DATABASE_URL"] = "postgresql://postgres:postgres@localhost:5432/fastapiapp_test"
+os.environ["DATABASE_URL"] = "postgresql://postgres:postpostgres23582358@localhost:5432/fastapiapp_test"
 os.environ["JWT_SECRET_KEY"] = "test-secret-key"
 os.environ["MAILGUN_API_KEY"] = "test-key"
 os.environ["MAILGUN_DOMAIN"] = "test.mailgun.org"
@@ -103,12 +103,14 @@ def create_test_user(db_session):
     def _create(
         email="user@example.com",
         password="securepassword123",
-        name="Test User",
+        first_name="Test",
+        last_name="User",
         is_verified=True,
     ):
         user = User(
             id=uuid.uuid4(),
-            name=name,
+            first_name=first_name,
+            last_name=last_name,
             email=email,
             password_hash=hash_password(password),
             is_verified=is_verified,

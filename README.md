@@ -11,7 +11,7 @@ Use it as a standalone auth backend or as the foundation for your own applicatio
 - **Email verification** — code-based and token-based flows via Mailgun
 - **Password reset** — secure reset flow with expiring codes
 - **Change password** — authenticated password change with token invalidation
-- **Profile update** — update name via PATCH /users/me
+- **Profile update** — update first_name/last_name via PATCH /users/me
 - **Admin endpoints** — role management + user listing (admin-only)
 - **Rate limiting** — Redis sliding window counter (Lua script), per-IP and per-email
 - **Token revocation** — blacklist table + password/role-change invalidation
@@ -72,7 +72,7 @@ uvicorn app.main:app --reload
 |--------|------|------|--------------|-------------|
 | POST | `/users/create` | No | 5/hr per IP | Register a new user |
 | GET | `/users/me` | Bearer | No | Get authenticated user profile |
-| PATCH | `/users/me` | Bearer | No | Update profile (name) |
+| PATCH | `/users/me` | Bearer | No | Update profile (first_name, last_name) |
 
 ### Auth (`/api/auth`)
 

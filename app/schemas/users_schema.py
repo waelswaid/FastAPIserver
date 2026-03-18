@@ -4,7 +4,8 @@ from typing import Optional
 import uuid
 
 class UserBase(BaseModel):
-    name: str
+    first_name: str
+    last_name: str
     email: EmailStr
 
 # input for post requests
@@ -20,7 +21,5 @@ class UserRead(UserBase):
 
 
 class UserUpdate(BaseModel):
-    name: Optional[str] = Field(None, min_length=1, max_length=255)
-
-
-
+    first_name: Optional[str] = Field(None, min_length=1, max_length=255)
+    last_name: Optional[str] = Field(None, min_length=1, max_length=255)

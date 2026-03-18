@@ -281,7 +281,7 @@ def test_new_user_defaults_to_user_role(client, create_test_user):
 def test_registered_user_has_user_role(client, db_session):
     resp = client.post(
         "/api/users/create",
-        json={"name": "New User", "email": "newreg@example.com", "password": "securepassword123"},
+        json={"first_name": "New", "last_name": "User", "email": "newreg@example.com", "password": "securepassword123"},
     )
     assert resp.status_code == 200
     assert resp.json()["role"] == "user"

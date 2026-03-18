@@ -1,16 +1,20 @@
 from datetime import datetime, timezone, timedelta
 
 from app.models.token_blacklist import TokenBlacklist
-from app.services.auth_services import jwt_gen
+from app.models.pending_action import PendingAction
+from app.services.auth_services import jwt_gen, ACTION_PASSWORD_RESET_CODE, ACTION_PASSWORD_RESET_JTI
 
 
 # GET with valid reset code returns 200 and echoes the code back
 def test_validate_reset_code_success(client, verified_user, db_session):
     user, _ = verified_user
     client.post("/api/auth/forgot-password", json={"email": user.email})
-    db_session.refresh(user)
-    code = user.password_reset_code
-    assert code is not None
+    action = db_session.query(PendingAction).filter(
+        PendingAction.user_id == user.id,
+        PendingAction.action_type == ACTION_PASSWORD_RESET_CODE,
+    ).first()
+    assert action is not None
+    code = action.code
 
     resp = client.get(f"/api/auth/reset-password?code={code}")
     assert resp.status_code == 200
@@ -27,10 +31,13 @@ def test_validate_reset_code_invalid(client):
 def test_validate_reset_code_expired(client, verified_user, db_session):
     user, _ = verified_user
     client.post("/api/auth/forgot-password", json={"email": user.email})
-    db_session.refresh(user)
-    code = user.password_reset_code
+    action = db_session.query(PendingAction).filter(
+        PendingAction.user_id == user.id,
+        PendingAction.action_type == ACTION_PASSWORD_RESET_CODE,
+    ).first()
+    code = action.code
 
-    user.password_reset_code_expires_at = datetime.now(timezone.utc) - timedelta(minutes=1)
+    action.expires_at = datetime.now(timezone.utc) - timedelta(minutes=1)
     db_session.flush()
 
     resp = client.get(f"/api/auth/reset-password?code={code}")
@@ -41,8 +48,11 @@ def test_validate_reset_code_expired(client, verified_user, db_session):
 def test_reset_password_via_code_success(client, verified_user, db_session):
     user, old_password = verified_user
     client.post("/api/auth/forgot-password", json={"email": user.email})
-    db_session.refresh(user)
-    code = user.password_reset_code
+    action = db_session.query(PendingAction).filter(
+        PendingAction.user_id == user.id,
+        PendingAction.action_type == ACTION_PASSWORD_RESET_CODE,
+    ).first()
+    code = action.code
 
     resp = client.post(
         "/api/auth/reset-password",
@@ -61,8 +71,11 @@ def test_reset_password_via_code_success(client, verified_user, db_session):
 def test_reset_password_via_code_reused(client, verified_user, db_session):
     user, _ = verified_user
     client.post("/api/auth/forgot-password", json={"email": user.email})
-    db_session.refresh(user)
-    code = user.password_reset_code
+    action = db_session.query(PendingAction).filter(
+        PendingAction.user_id == user.id,
+        PendingAction.action_type == ACTION_PASSWORD_RESET_CODE,
+    ).first()
+    code = action.code
 
     resp1 = client.post(
         "/api/auth/reset-password",
@@ -77,14 +90,18 @@ def test_reset_password_via_code_reused(client, verified_user, db_session):
     assert resp2.status_code == 400
 
 
-# POST with valid reset JWT (and matching JTI on user) returns 200
+# POST with valid reset JWT (and matching JTI in pending_actions) returns 200
 def test_reset_password_via_token_success(client, verified_user, db_session):
     user, _ = verified_user
     token = jwt_gen.create_password_reset_token(str(user.id))
     payload = jwt_gen.decode_password_reset_token(token)
 
-    user.password_reset_jti = payload["jti"]
-    user.password_reset_jti_expires_at = datetime.fromtimestamp(payload["exp"], tz=timezone.utc)
+    db_session.add(PendingAction(
+        user_id=user.id,
+        action_type=ACTION_PASSWORD_RESET_JTI,
+        code=payload["jti"],
+        expires_at=datetime.fromtimestamp(payload["exp"], tz=timezone.utc),
+    ))
     db_session.flush()
 
     resp = client.post(
@@ -123,8 +140,12 @@ def test_reset_password_via_token_blacklisted(client, verified_user, db_session)
     payload = jwt_gen.decode_password_reset_token(token)
     jti = payload["jti"]
 
-    user.password_reset_jti = jti
-    user.password_reset_jti_expires_at = datetime.fromtimestamp(payload["exp"], tz=timezone.utc)
+    db_session.add(PendingAction(
+        user_id=user.id,
+        action_type=ACTION_PASSWORD_RESET_JTI,
+        code=jti,
+        expires_at=datetime.fromtimestamp(payload["exp"], tz=timezone.utc),
+    ))
     db_session.flush()
 
     db_session.add(
@@ -152,8 +173,11 @@ def test_reset_password_missing_token_and_code(client):
 def test_reset_password_short_new_password(client, verified_user, db_session):
     user, _ = verified_user
     client.post("/api/auth/forgot-password", json={"email": user.email})
-    db_session.refresh(user)
-    code = user.password_reset_code
+    action = db_session.query(PendingAction).filter(
+        PendingAction.user_id == user.id,
+        PendingAction.action_type == ACTION_PASSWORD_RESET_CODE,
+    ).first()
+    code = action.code
 
     resp = client.post(
         "/api/auth/reset-password",
@@ -166,10 +190,13 @@ def test_reset_password_short_new_password(client, verified_user, db_session):
 def test_reset_password_via_code_expired_post(client, verified_user, db_session):
     user, _ = verified_user
     client.post("/api/auth/forgot-password", json={"email": user.email})
-    db_session.refresh(user)
-    code = user.password_reset_code
+    action = db_session.query(PendingAction).filter(
+        PendingAction.user_id == user.id,
+        PendingAction.action_type == ACTION_PASSWORD_RESET_CODE,
+    ).first()
+    code = action.code
 
-    user.password_reset_code_expires_at = datetime.now(timezone.utc) - timedelta(minutes=1)
+    action.expires_at = datetime.now(timezone.utc) - timedelta(minutes=1)
     db_session.flush()
 
     resp = client.post(
@@ -179,13 +206,17 @@ def test_reset_password_via_code_expired_post(client, verified_user, db_session)
     assert resp.status_code == 400
 
 
-# Valid token whose JTI doesn't match the user's stored password_reset_jti returns 400
+# Valid token whose JTI doesn't match the stored pending action returns 400
 def test_reset_password_via_token_jti_mismatch(client, verified_user, db_session):
     user, _ = verified_user
     token = jwt_gen.create_password_reset_token(str(user.id))
 
-    user.password_reset_jti = "some-other-jti"
-    user.password_reset_jti_expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
+    db_session.add(PendingAction(
+        user_id=user.id,
+        action_type=ACTION_PASSWORD_RESET_JTI,
+        code="some-other-jti",
+        expires_at=datetime.now(timezone.utc) + timedelta(hours=1),
+    ))
     db_session.flush()
 
     resp = client.post(
@@ -201,8 +232,12 @@ def test_reset_password_via_token_then_login(client, verified_user, db_session):
     token = jwt_gen.create_password_reset_token(str(user.id))
     payload = jwt_gen.decode_password_reset_token(token)
 
-    user.password_reset_jti = payload["jti"]
-    user.password_reset_jti_expires_at = datetime.fromtimestamp(payload["exp"], tz=timezone.utc)
+    db_session.add(PendingAction(
+        user_id=user.id,
+        action_type=ACTION_PASSWORD_RESET_JTI,
+        code=payload["jti"],
+        expires_at=datetime.fromtimestamp(payload["exp"], tz=timezone.utc),
+    ))
     db_session.flush()
 
     resp = client.post(

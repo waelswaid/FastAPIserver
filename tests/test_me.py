@@ -14,7 +14,8 @@ def test_get_me_success(auth_client):
     assert resp.status_code == 200
     data = resp.json()
     assert data["email"] == user.email
-    assert data["name"] == user.name
+    assert data["first_name"] == user.first_name
+    assert data["last_name"] == user.last_name
 
 
 # No Authorization header returns 401

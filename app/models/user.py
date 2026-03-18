@@ -17,7 +17,8 @@ class User(Base):
         primary_key=True,
         server_default=text("gen_random_uuid()"),
     )
-    name: Mapped[str] = mapped_column(String, nullable=False, index=True)
+    first_name: Mapped[str] = mapped_column(String, nullable=False, index=True)
+    last_name: Mapped[str] = mapped_column(String, nullable=False, index=True)
     email: Mapped[str] = mapped_column(String, unique=True, nullable=False, index=True)
     password_hash: Mapped[str] = mapped_column(String, nullable=False)
     is_verified: Mapped[bool] = mapped_column(
@@ -29,11 +30,6 @@ class User(Base):
         DateTime(timezone=True),
         nullable=False,
         server_default=text("now()"),
-    )
-    password_reset_jti: Mapped[Optional[str]] = mapped_column(String, nullable=True, index=True)
-    password_reset_jti_expires_at: Mapped[Optional[datetime]] = mapped_column(
-        DateTime(timezone=True),
-        nullable=True,
     )
     password_changed_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True),
@@ -47,16 +43,6 @@ class User(Base):
         index=True,
     )
     role_changed_at: Mapped[Optional[datetime]] = mapped_column(
-        DateTime(timezone=True),
-        nullable=True,
-    )
-    email_verification_code: Mapped[Optional[str]] = mapped_column(String, nullable=True)
-    email_verification_code_expires_at: Mapped[Optional[datetime]] = mapped_column(
-        DateTime(timezone=True),
-        nullable=True,
-    )
-    password_reset_code: Mapped[Optional[str]] = mapped_column(String, nullable=True)
-    password_reset_code_expires_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
     )

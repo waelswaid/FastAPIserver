@@ -1,9 +1,13 @@
+import logging
+
 from fastapi import APIRouter, Depends
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.database.session import get_db
 from app.core.redis import get_redis
+
+logger = logging.getLogger(__name__)
 
 health_router = APIRouter(tags=["health"])
 
@@ -19,7 +23,8 @@ async def health_check(db: Session = Depends(get_db)):
         db.execute(text("SELECT 1"))
         checks["database"] = {"status": "up"}
     except Exception as e:
-        checks["database"] = {"status": "down", "detail": str(e)}
+        logger.error("Health check: database is down: %s", e)
+        checks["database"] = {"status": "down", "detail": "unavailable"}
         status = "unhealthy"
         status_code = 503
 
@@ -31,7 +36,8 @@ async def health_check(db: Session = Depends(get_db)):
         await redis.ping()
         checks["redis"] = {"status": "up"}
     except Exception as e:
-        checks["redis"] = {"status": "down", "detail": str(e)}
+        logger.error("Health check: redis is down: %s", e)
+        checks["redis"] = {"status": "down", "detail": "unavailable"}
         if status != "unhealthy":
             status = "degraded"
 

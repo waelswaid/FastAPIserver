@@ -28,7 +28,8 @@ def validate_token(current_user: User = Depends(get_current_user)):
     return {
         "user_id": str(current_user.id),
         "email": current_user.email,
-        "name": current_user.name,
+        "first_name": current_user.first_name,
+        "last_name": current_user.last_name,
         "is_verified": current_user.is_verified,
         "role": current_user.role,
     }
@@ -94,7 +95,7 @@ def route_verify_email_via_link(code: str, db: Session = Depends(get_db)):
     return {"message": "Email verified successfully. You can now log in."}
 
 
-@auth_router.post("/verify-email", status_code=200)
+@auth_router.post("/verify-email", status_code=200, dependencies=[Depends(verify_email_limiter)])
 def route_verify_email(body: VerifyEmailRequest, db: Session = Depends(get_db)):
     verify_email_token(db, body.token)
     return {"message": "Email verified successfully. You can now log in."}
