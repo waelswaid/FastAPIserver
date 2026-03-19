@@ -8,6 +8,8 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     ENVIRONMENT: str = "development"  # set to "production" in prod
+    LOG_LEVEL: str = "INFO"
+    CORS_ORIGINS: str = "http://localhost:5173"
 
     # Mailgun
     MAILGUN_API_KEY: str

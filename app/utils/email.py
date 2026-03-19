@@ -1,5 +1,9 @@
+import logging
+
 import requests
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 def send_password_reset_email(to_email: str, code: str) -> None:
@@ -23,6 +27,7 @@ def send_password_reset_email(to_email: str, code: str) -> None:
         },
     )
     response.raise_for_status()
+    logger.info("Password reset email sent to=%s", to_email)
 
 
 def send_verification_email(to_email: str, code: str) -> None:
@@ -46,3 +51,4 @@ def send_verification_email(to_email: str, code: str) -> None:
         },
     )
     response.raise_for_status()
+    logger.info("Verification email sent to=%s", to_email)

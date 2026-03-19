@@ -1,5 +1,7 @@
 # FastAPIapp — Claude Instructions
 
+auth-system is a generic authentication system and must remain that way.
+
 ## Architecture & Modularity
 - Strictly follow the service layer pattern: routes call services, services call repositories, repositories talk to the DB
 - Never access the DB directly from routes or services — always go through a repository function

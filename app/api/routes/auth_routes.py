@@ -18,7 +18,9 @@ from app.api.dependencies.rate_limiter import (
 )
 from app.core.config import settings
 from typing import Optional
+import logging
 
+logger = logging.getLogger(__name__)
 
 auth_router = APIRouter(prefix="/auth", tags=["auth"])
 

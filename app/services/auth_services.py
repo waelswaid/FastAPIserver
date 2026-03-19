@@ -162,7 +162,7 @@ def request_password_reset(db: Session, email: str) -> None:
         logger.error("Failed to send password reset email: %s", exc)
         raise HTTPException(status_code=503, detail="Unable to send email. Please try again later.")
 
-    logger.info("audit: event=password_reset_requested user_id=%s", user.id)
+    logger.info("audit: event=password_reset_requested user_id=%s email=%s", user.id, user.email)
 
 
 def send_verification_email_for_user(db: Session, user: User) -> None:
@@ -217,7 +217,7 @@ def verify_email_token(db: Session, token: str) -> None:
     add_to_blacklist(db, jti, expires_at, commit=False)
     verify_user(db, user, commit=False)
     db.commit()
-    logger.info("audit: event=email_verified user_id=%s", user_id)
+    logger.info("audit: event=email_verified user_id=%s email=%s", user_id, user.email)
 
 
 def reset_password(db: Session, token: str, new_password: str) -> None:
@@ -254,7 +254,7 @@ def reset_password(db: Session, token: str, new_password: str) -> None:
     update_password(db, user, hash_password(new_password), commit=False)
     delete_actions_for_user(db, user.id, ALL_RESET_ACTIONS, commit=False)
     db.commit()
-    logger.info("audit: event=password_reset user_id=%s", user_id)
+    logger.info("audit: event=password_reset user_id=%s email=%s", user_id, user.email)
 
 
 def verify_email_code(db: Session, code: str) -> None:
@@ -273,7 +273,7 @@ def verify_email_code(db: Session, code: str) -> None:
     delete_action(db, action, commit=False)
     verify_user(db, user, commit=False)
     db.commit()
-    logger.info("audit: event=email_verified user_id=%s", user.id)
+    logger.info("audit: event=email_verified user_id=%s email=%s", user.id, user.email)
 
 
 def reset_password_via_code(db: Session, code: str, new_password: str) -> None:
@@ -289,7 +289,7 @@ def reset_password_via_code(db: Session, code: str, new_password: str) -> None:
     update_password(db, user, hash_password(new_password), commit=False)
     delete_actions_for_user(db, user.id, ALL_RESET_ACTIONS, commit=False)
     db.commit()
-    logger.info("audit: event=password_reset user_id=%s", user.id)
+    logger.info("audit: event=password_reset user_id=%s email=%s", user.id, user.email)
 
 
 def change_password(db: Session, user: User, current_password: str, new_password: str) -> None:
@@ -299,7 +299,7 @@ def change_password(db: Session, user: User, current_password: str, new_password
     update_password(db, user, hash_password(new_password), commit=False)
     delete_actions_for_user(db, user.id, ALL_RESET_ACTIONS, commit=False)
     db.commit()
-    logger.info("audit: event=password_changed user_id=%s", user.id)
+    logger.info("audit: event=password_changed user_id=%s email=%s", user.id, user.email)
 
 
 def validate_reset_code(db: Session, code: str) -> None:

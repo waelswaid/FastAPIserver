@@ -1,8 +1,17 @@
 import logging
+import time
+import uuid
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request, Response
 
-logging.basicConfig(level=logging.INFO)
+from fastapi import FastAPI, Request, Response
+from starlette.middleware.cors import CORSMiddleware
+
+from app.core.logging import init_logging, correlation_id_var
+from app.core.config import settings
+
+init_logging(settings.ENVIRONMENT, settings.LOG_LEVEL)
+logger = logging.getLogger(__name__)
+
 from app.api.routes.user_routes import user_router
 from app.api.routes.auth_routes import auth_router
 from app.api.routes.admin_routes import admin_router
@@ -27,6 +36,38 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+
+origins = [o.strip() for o in settings.CORS_ORIGINS.split(",") if o.strip()]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+@app.middleware("http")
+async def request_logging_middleware(request: Request, call_next) -> Response:
+    request_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())
+    token = correlation_id_var.set(request_id)
+    request.state.correlation_id = request_id
+    start = time.perf_counter()
+    try:
+        response: Response = await call_next(request)
+        duration_ms = round((time.perf_counter() - start) * 1000, 1)
+        response.headers["X-Request-ID"] = request_id
+        if request.url.path != "/health":
+            logger.info(
+                "%s %s %s %.1fms",
+                request.method,
+                request.url.path,
+                response.status_code,
+                duration_ms,
+            )
+        return response
+    finally:
+        correlation_id_var.reset(token)
 
 
 @app.middleware("http")

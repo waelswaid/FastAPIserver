@@ -9,7 +9,9 @@ from app.repositories.user_repository import list_users
 from app.models.user import User
 from typing import Optional
 import uuid
+import logging
 
+logger = logging.getLogger(__name__)
 
 admin_router = APIRouter(prefix="/users", tags=["admin"])
 
