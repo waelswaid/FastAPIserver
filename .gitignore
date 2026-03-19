@@ -22,5 +22,7 @@ dist/
 build/
 *.egg-info/
 microservice-architecture.md
-docs/
+claude-commands.md
+cors_and_nginx.md
+docker-guide.md
 SECURITY_ISSUES.txt

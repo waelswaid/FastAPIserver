@@ -97,14 +97,20 @@ uvicorn app.main:app --reload
 | GET | `/users/` | Admin | List users (optional `?role=` filter, pagination) |
 | PATCH | `/users/{user_id}/role` | Admin | Change a user's role (`user` or `admin`) |
 
-## Authentication Flow
+## Architecture Diagrams
 
-1. **Register** — `POST /api/users/create` creates account and sends verification email
-2. **Verify Email** — User clicks link in email (`GET /api/auth/verify-email?code=...`)
-3. **Login** — `POST /api/auth/login` returns access token (with `role` claim) + sets refresh cookie
-4. **Access Protected Routes** — `Authorization: Bearer <access_token>` header
-5. **Refresh** — `POST /api/auth/refresh` exchanges refresh cookie for new access token
-6. **Logout** — `POST /api/auth/logout` blacklists tokens and clears cookie
+See [Architecture Diagrams](docs/architecture-diagrams.md) for detailed Mermaid diagrams covering:
+
+1. **System Context** — auth-system and its external dependencies
+2. **Docker Deployment** — container orchestration
+3. **Application Layer Architecture** — service layer pattern (routes → services → repos → DB)
+4. **Middleware Pipeline** — CORS → logging → rate limit headers → routing
+5. **Database Schema** — ER diagram (users, pending_actions, token_blacklist)
+6. **Authentication & Token Flow** — login, authenticated requests, refresh, logout
+7. **Password Reset Flow** — forgot → validate code → reset
+8. **Email Verification Flow** — registration → verify via code
+9. **Rate Limiting Architecture** — Redis sliding window
+10. **Auth Dependency & RBAC** — token validation and role checking
 
 ## RBAC
 
@@ -121,19 +127,6 @@ python -m scripts.promote_admin admin@example.com
 docker compose exec auth-service python -m scripts.promote_admin admin@example.com
 ```
 
-## Architecture
-
-```
-Routes → Dependencies → Services → Repositories → Models → PostgreSQL
-                ↕
-         Redis (rate limiting)
-```
-
-- **Routes** — HTTP concerns (request/response, status codes, cookies)
-- **Dependencies** — Rate limiting, authentication
-- **Services** — Business logic (validation, token generation, email)
-- **Repositories** — Data access (queries, row-level locks)
-- **Models** — Database schema (SQLAlchemy ORM)
 
 ## Testing
 
@@ -158,7 +151,3 @@ Contributions are welcome! Please:
 3. Write tests for your changes
 4. Ensure all tests pass (`pytest tests/ -v`)
 5. Open a pull request
-
-## License
-
-MIT
