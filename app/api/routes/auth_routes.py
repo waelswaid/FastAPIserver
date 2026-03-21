@@ -59,10 +59,19 @@ async def route_login_request(login_data: LoginRequest, response: Response, db: 
 
 
 @auth_router.post("/refresh", response_model=TokenResponse, dependencies=[Depends(refresh_limiter)])
-async def route_refresh_token(refresh_token: Optional[str] = Cookie(None), db: Session = Depends(get_db)) -> TokenResponse:
+async def route_refresh_token(response: Response, refresh_token: Optional[str] = Cookie(None), db: Session = Depends(get_db)) -> TokenResponse:
     if refresh_token is None:
         raise HTTPException(status_code=401, detail="No refresh token provided")
-    return await refresh_access_token(db, refresh_token)
+    access_token, new_refresh_token = await refresh_access_token(db, refresh_token)
+    response.set_cookie(
+        key="refresh_token",
+        value=new_refresh_token,
+        httponly=True,
+        secure=settings.ENVIRONMENT == "production",
+        samesite="strict",
+        max_age=jwt_gen.config.refresh_token_expiry_days * 86400,
+    )
+    return TokenResponse(access_token=access_token, token_type="bearer")
 
 
 @auth_router.post("/logout", status_code=204)

@@ -65,7 +65,7 @@ def user_login(db: Session, login_data: LoginRequest) -> tuple[str, str]:
     return access_token, refresh_token
 
 
-async def refresh_access_token(db: Session, refresh_token: str) -> TokenResponse:
+async def refresh_access_token(db: Session, refresh_token: str) -> tuple[str, str]:
     try:
         payload = jwt_gen.decode_refresh_token(refresh_token)
     except ValueError:
@@ -97,9 +97,13 @@ async def refresh_access_token(db: Session, refresh_token: str) -> TokenResponse
         if datetime.fromtimestamp(iat, tz=timezone.utc) < user.role_changed_at:
             raise HTTPException(status_code=401, detail="Invalid or expired refresh token")
 
+    await add_to_blacklist(jti, datetime.fromtimestamp(payload["exp"], tz=timezone.utc))
+
     role_claims = {"role": user.role}
     access_token = jwt_gen.create_access_token(str(user.id), additional_claims=role_claims)
-    return TokenResponse(access_token=access_token, token_type="bearer")
+    new_refresh_token = jwt_gen.create_refresh_token(str(user.id), additional_claims=role_claims)
+    logger.info("audit: event=token_refresh user_id=%s", user.id)
+    return access_token, new_refresh_token
 
 
 async def logout(token: str, refresh_token: str | None = None) -> None:
