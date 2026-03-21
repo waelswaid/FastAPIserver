@@ -1,7 +1,7 @@
 import os
 
 # Set test environment variables BEFORE any app imports
-os.environ.setdefault("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/fastapiapp_test")
+os.environ.setdefault("DATABASE_URL", "postgresql://postgres:postpostgres23582358@localhost:5432/fastapiapp_test")
 os.environ["JWT_SECRET_KEY"] = "test-secret-key"
 os.environ["MAILGUN_API_KEY"] = "test-key"
 os.environ["MAILGUN_DOMAIN"] = "test.mailgun.org"

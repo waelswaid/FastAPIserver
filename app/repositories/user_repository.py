@@ -69,6 +69,14 @@ def update_user_profile(db: Session, user: User, first_name: Optional[str] = Non
     db.commit()
 
 
+def delete_user(db: Session, user: User, commit: bool = True) -> None:
+    db.delete(user)
+    if commit:
+        db.commit()
+    else:
+        db.flush()
+
+
 def list_users(
     db: Session,
     role_filter: Optional[str] = None,

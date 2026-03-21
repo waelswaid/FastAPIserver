@@ -41,6 +41,7 @@ class Settings(BaseSettings):
     RATE_LIMIT_VERIFY_EMAIL: int = 10
     RATE_LIMIT_VALIDATE_RESET_CODE: int = 10
     RATE_LIMIT_CHANGE_PASSWORD: int = 5
+    RATE_LIMIT_DELETE_ACCOUNT: int = 5
 
     # lockout limits
     MAX_ATTEMPTS_UNTILL_LOCKOUT: int = 10

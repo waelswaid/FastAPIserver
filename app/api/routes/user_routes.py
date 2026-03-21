@@ -1,12 +1,13 @@
-from fastapi import Depends, APIRouter
+from fastapi import Depends, APIRouter, Response, Cookie
 from app.database.session import get_db
 from sqlalchemy.orm import Session
-from app.schemas.users_schema import UserCreate, UserRead, UserUpdate
-from app.services.user_services import user_create
-from app.api.dependencies.auth_dependency import get_current_user
-from app.api.dependencies.rate_limiter import registration_limiter
+from app.schemas.users_schema import UserCreate, UserRead, UserUpdate, DeleteAccountRequest
+from app.services.user_services import user_create, delete_own_account
+from app.api.dependencies.auth_dependency import get_current_user, oauth2_scheme
+from app.api.dependencies.rate_limiter import registration_limiter, delete_account_limiter
 from app.repositories.user_repository import update_user_profile
 from app.models.user import User
+from typing import Optional
 import logging
 
 logger = logging.getLogger(__name__)
@@ -23,6 +24,19 @@ def signup(user: UserCreate, db: Session = Depends(get_db)):
 @user_router.get("/users/me", response_model=UserRead)
 def get_me(current_user: User = Depends(get_current_user)):
     return current_user
+
+
+@user_router.delete("/users/me", status_code=204, dependencies=[Depends(delete_account_limiter)])
+async def delete_me(
+    body: DeleteAccountRequest,
+    response: Response,
+    current_user: User = Depends(get_current_user),
+    token: str = Depends(oauth2_scheme),
+    refresh_token: Optional[str] = Cookie(None),
+    db: Session = Depends(get_db),
+):
+    await delete_own_account(db, current_user, body.password, token, refresh_token)
+    response.delete_cookie("refresh_token")
 
 
 @user_router.patch("/users/me", response_model=UserRead)

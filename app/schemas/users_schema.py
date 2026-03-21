@@ -23,3 +23,7 @@ class UserRead(UserBase):
 class UserUpdate(BaseModel):
     first_name: Optional[str] = Field(None, min_length=1, max_length=255)
     last_name: Optional[str] = Field(None, min_length=1, max_length=255)
+
+
+class DeleteAccountRequest(BaseModel):
+    password: str = Field(min_length=8, max_length=128)

@@ -288,5 +288,9 @@ change_password_limiter = RateLimiter(
     name="change_password",
     max_requests=settings.RATE_LIMIT_CHANGE_PASSWORD,
 )
+delete_account_limiter = RateLimiter(
+    name="delete_account",
+    max_requests=settings.RATE_LIMIT_DELETE_ACCOUNT,
+)
 
 lockout_limiter = AccountLockout()
