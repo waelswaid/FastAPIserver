@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     JWT_SECRET_KEY: str
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
-    ENVIRONMENT: str = "development"  # set to "production" in prod
+    ENVIRONMENT: str = "production"  # set to "production" in prod
     LOG_LEVEL: str = "INFO"
     CORS_ORIGINS: str = "http://localhost:5173"
 
