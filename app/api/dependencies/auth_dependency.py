@@ -10,7 +10,13 @@ from app.services.auth_services import jwt_gen
 from app.repositories.user_repository import find_user_by_id
 from app.repositories.token_blacklist_repository import is_blacklisted
 
-
+"""
+OAuth2PasswordBearer creates a dependency that automatically pulls the bearer token from the authorization header.
+that means: when we do token = Depends(oauth2_scheme) it grabs the token string
+that means: when a client sends a request he sends something like this-> Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOi...
+Bearer is the token_type, the string after it is the JWT token, it contains headers.payload.signature
+so token = Depends(oauth2_scheme) -> contains JWT raw string --> this raw string is later decoded to pull out token data 
+"""
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 

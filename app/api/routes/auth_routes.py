@@ -39,7 +39,7 @@ async def validate_token(current_user: User = Depends(get_current_user)):
         "role": current_user.role,
     }
 
-
+# validates user data, if everything is ok, stores refresh token in httponly cookie and returns JWT access token
 @auth_router.post("/login", response_model=TokenResponse, dependencies=[Depends(login_limiter), Depends(login_global_limiter), Depends(lockout_limiter)])
 async def route_login_request(login_data: LoginRequest, response: Response, db: Session = Depends(get_db)) -> TokenResponse:
     try:
@@ -51,6 +51,7 @@ async def route_login_request(login_data: LoginRequest, response: Response, db: 
         raise
     # logged in successfully? reset lockout limits on this email
     await lockout_limiter.clear(login_data.email)
+    # stores the refresh token as a browser cookie instead of sending it in the JSON body
     response.set_cookie(
         key="refresh_token",
         value=refresh_token,

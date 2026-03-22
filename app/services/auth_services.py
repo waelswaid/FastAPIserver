@@ -75,12 +75,13 @@ async def refresh_access_token(db: Session, refresh_token: str) -> tuple[str, st
         payload = jwt_gen.decode_refresh_token(refresh_token)
     except ValueError:
         raise HTTPException(status_code=401, detail="Invalid or expired refresh token")
-
+    # this is user_id but in string format
     sub = payload.get("sub")
     if sub is None:
         raise HTTPException(status_code=401, detail="Invalid refresh token")
 
     try:
+        # user_id is stored as uuid in the db, so we cast it from string --> uuid
         user_id = uuid.UUID(sub)
     except ValueError:
         raise HTTPException(status_code=401, detail="Invalid refresh token")
@@ -88,20 +89,21 @@ async def refresh_access_token(db: Session, refresh_token: str) -> tuple[str, st
     user = find_user_by_id(db, user_id)
     if user is None:
         raise HTTPException(status_code=401, detail="Invalid refresh token")
-
+    # token's uuid (jti = JWT ID)
     jti = payload.get("jti")
     if jti is None or await is_blacklisted(jti):
         raise HTTPException(status_code=401, detail="Invalid or expired refresh token")
-
+    # issued at
     iat = payload.get("iat")
+    # invalidates all tokens that were issued before the user changed their password
     if iat is not None and user.password_changed_at is not None:
         if datetime.fromtimestamp(iat, tz=timezone.utc) < user.password_changed_at:
             raise HTTPException(status_code=401, detail="Invalid or expired refresh token")
-
+    # invalidates all tokens issued before user changed role
     if iat is not None and user.role_changed_at is not None:
         if datetime.fromtimestamp(iat, tz=timezone.utc) < user.role_changed_at:
             raise HTTPException(status_code=401, detail="Invalid or expired refresh token")
-
+    # blacklists the current token
     await add_to_blacklist(jti, datetime.fromtimestamp(payload["exp"], tz=timezone.utc))
 
     role_claims = {"role": user.role}
@@ -110,9 +112,10 @@ async def refresh_access_token(db: Session, refresh_token: str) -> tuple[str, st
     logger.info("audit: event=token_refresh user_id=%s", user.id)
     return access_token, new_refresh_token
 
-
+# extracts jti and expiry from access and refresh tokens and sends them to redis for blacklisting
 async def logout(token: str, refresh_token: str | None = None) -> None:
     try:
+        # extracts the payload from the token
         payload = jwt_gen.decode_access_token(token)
     except ValueError:
         raise HTTPException(status_code=401, detail="Invalid token")
