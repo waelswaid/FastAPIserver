@@ -33,7 +33,7 @@ async def lifespan(app: FastAPI):
     finally:
         db.close()
     await init_redis()
-    yield 
+    yield # app runs here. when it shutsdown it runs the line below
     await close_redis()
 
 
@@ -91,3 +91,27 @@ app.include_router(health_router)
 app.include_router(user_router, prefix="/api")
 app.include_router(auth_router, prefix="/api")
 app.include_router(admin_router, prefix="/api/admin")
+
+
+
+"""
+middleware:
+    client sends http request --> rate_limit_headers_middleware --> runs code until call_next --> 
+    request_logging_middleware --> runs code untill call_next --> route handler --> auth_Services -->
+    repositories --> db --> ... --> request_logging_middleware runs the code after call_next --> logs duration, sets X-Request-ID 
+    --> rate_limit_headers_middleware runs code after call_next --> sets X-RateLimit-* headers
+"""
+
+
+
+"""
+headers:
+  X-Request-ID — A correlation ID (UUID) to trace a single request through logs. If the client sends one, the app reuses it,  
+  otherwise it generates one. Useful for debugging across services.
+
+  X-RateLimit-Limit — The max number of requests allowed in the window (e.g., 10).
+
+  X-RateLimit-Remaining — How many requests the client has left (e.g., 7).
+
+  X-RateLimit-Reset — When the rate limit window resets (typically a Unix timestamp).
+"""

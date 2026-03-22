@@ -45,11 +45,12 @@ DUMMY_HASH = hash_password("dummy-password-for-timing")
 
 
 def user_login(db: Session, login_data: LoginRequest) -> tuple[str, str]:
-    user = find_user_by_email(db, login_data.email)
-    if not user:
+    user = find_user_by_email(db, login_data.email) # returns User object
+    if not user: # prevents timing attacks
         verify_password(login_data.password, DUMMY_HASH)
         logger.warning("audit: event=login_failed email=%s reason=invalid_credentials", login_data.email)
         raise HTTPException(status_code=401, detail="Invalid Credentials")
+    # user exists but password is incorrect
     if not verify_password(login_data.password, user.password_hash):
         logger.warning("audit: event=login_failed email=%s reason=invalid_credentials", login_data.email)
         raise HTTPException(status_code=401, detail="Invalid Credentials")
@@ -61,7 +62,7 @@ def user_login(db: Session, login_data: LoginRequest) -> tuple[str, str]:
     if not user.is_verified:
         logger.warning("audit: event=login_failed_unverified email=%s reason=email_not_verified", login_data.email)
         raise HTTPException(status_code=403, detail="Please verify your email before logging in.")
-
+    # user is ok to login 
     role_claims = {"role": user.role}
     access_token = jwt_gen.create_access_token(str(user.id), additional_claims=role_claims)
     refresh_token = jwt_gen.create_refresh_token(str(user.id), additional_claims=role_claims)

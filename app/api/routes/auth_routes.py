@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 auth_router = APIRouter(prefix="/auth", tags=["auth"])
 
-
+# service-to-service endpoint for token validation
 @auth_router.get("/validate-token")
 async def validate_token(current_user: User = Depends(get_current_user)):
     return {
@@ -43,11 +43,13 @@ async def validate_token(current_user: User = Depends(get_current_user)):
 @auth_router.post("/login", response_model=TokenResponse, dependencies=[Depends(login_limiter), Depends(login_global_limiter), Depends(lockout_limiter)])
 async def route_login_request(login_data: LoginRequest, response: Response, db: Session = Depends(get_db)) -> TokenResponse:
     try:
-        access_token, refresh_token = user_login(db, login_data)
+        access_token, refresh_token = user_login(db, login_data) # user_login returns access and refresh tokens (logs in user)
     except HTTPException as exc:
         if exc.status_code == 401:
+            # +1 log in attempts (account locks at 10)
             await lockout_limiter.record_failure(login_data.email)
         raise
+    # logged in successfully? reset lockout limits on this email
     await lockout_limiter.clear(login_data.email)
     response.set_cookie(
         key="refresh_token",
