@@ -4,8 +4,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 # this tells pydantic to read the .env file and load the environment variables
 class Settings(BaseSettings):
     DATABASE_URL: str
-    JWT_SECRET_KEY: str
-    JWT_ALGORITHM: str = "HS256"
+    JWT_PRIVATE_KEY: str
+    JWT_PUBLIC_KEY: str
+    JWT_ALGORITHM: str = "RS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     ENVIRONMENT: str = "production"  # set to "production" in prod
     LOG_LEVEL: str = "INFO"

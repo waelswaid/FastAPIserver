@@ -32,7 +32,8 @@ ACTION_PASSWORD_RESET_CODE = "password_reset_code"
 ALL_RESET_ACTIONS = [ACTION_PASSWORD_RESET_JTI, ACTION_PASSWORD_RESET_CODE]
 
 jwt_config = JWTConfig(
-    secret_key=settings.JWT_SECRET_KEY,
+    private_key=settings.JWT_PRIVATE_KEY,
+    public_key=settings.JWT_PUBLIC_KEY,
     algorithm=settings.JWT_ALGORITHM,
     access_token_expiry_minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES,
     password_reset_token_expiry_minutes=settings.PASSWORD_RESET_EXPIRE_MINUTES,

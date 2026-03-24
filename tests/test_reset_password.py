@@ -123,7 +123,7 @@ def test_reset_password_via_token_expired(client, verified_user, db_session):
         "exp": datetime.now(timezone.utc) - timedelta(minutes=1),
         "jti": "expired-jti",
     }
-    token = pyjwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+    token = pyjwt.encode(payload, settings.JWT_PRIVATE_KEY, algorithm=settings.JWT_ALGORITHM)
 
     resp = client.post(
         "/api/auth/reset-password",

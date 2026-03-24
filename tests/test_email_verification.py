@@ -84,7 +84,7 @@ def test_verify_via_token_expired(client, unverified_user, db_session):
         "exp": datetime.now(timezone.utc) - timedelta(minutes=1),
         "jti": "expired-verify-jti",
     }
-    token = pyjwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+    token = pyjwt.encode(payload, settings.JWT_PRIVATE_KEY, algorithm=settings.JWT_ALGORITHM)
 
     resp = client.post("/api/auth/verify-email", json={"token": token})
     assert resp.status_code == 400

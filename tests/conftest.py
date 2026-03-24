@@ -1,8 +1,25 @@
 import os
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives import serialization
+
+# Generate a test RSA key pair for JWT signing
+_test_private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+_test_private_pem = _test_private_key.private_bytes(
+    encoding=serialization.Encoding.PEM,
+    format=serialization.PrivateFormat.TraditionalOpenSSL,
+    encryption_algorithm=serialization.NoEncryption(),
+).decode()
+_test_public_pem = _test_private_key.public_key().public_bytes(
+    encoding=serialization.Encoding.PEM,
+    format=serialization.PublicFormat.SubjectPublicKeyInfo,
+).decode()
 
 # Set test environment variables BEFORE any app imports
 os.environ.setdefault("DATABASE_URL", "postgresql://postgres:postpostgres23582358@localhost:5432/fastapiapp_test")
-os.environ["JWT_SECRET_KEY"] = "test-secret-key"
+os.environ["JWT_PRIVATE_KEY"] = _test_private_pem
+os.environ["JWT_PUBLIC_KEY"] = _test_public_pem
+os.environ["JWT_ALGORITHM"] = "RS256"
+os.environ.pop("JWT_SECRET_KEY", None)
 os.environ["MAILGUN_API_KEY"] = "test-key"
 os.environ["MAILGUN_DOMAIN"] = "test.mailgun.org"
 os.environ["MAILGUN_FROM_EMAIL"] = "test@test.mailgun.org"

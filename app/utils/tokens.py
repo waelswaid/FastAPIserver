@@ -11,13 +11,14 @@ from jwt import ExpiredSignatureError, InvalidTokenError
 
 
 # configuration container
-# when creating a token, the secret is used to generate the signature
-# when decoding a token, the same secret is used to verify that signature
-#if the secret changes, old tokens will stop working
+# when creating a token, the private key is used to generate the signature
+# when decoding a token, the public key is used to verify that signature
+# if the keys change, old tokens will stop working
 @dataclass
 class JWTConfig:
-    secret_key: str
-    algorithm: str = "HS256"
+    private_key: str
+    public_key: str
+    algorithm: str = "RS256"
     access_token_expiry_minutes: int = 15
     refresh_token_expiry_days: int = 1
     password_reset_token_expiry_minutes: int = 15
@@ -55,7 +56,7 @@ class JWTUtility:
         # creates the jwt string
         return jwt.encode(
             payload,
-            self.config.secret_key,
+            self.config.private_key,
             algorithm=self.config.algorithm,
         )
 
@@ -92,7 +93,7 @@ class JWTUtility:
         try:
             return jwt.decode(
                 token,
-                self.config.secret_key,
+                self.config.public_key,
                 algorithms=[self.config.algorithm],
             )
         except ExpiredSignatureError as exc:
