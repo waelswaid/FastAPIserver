@@ -24,6 +24,7 @@ os.environ["MAILGUN_API_KEY"] = "test-key"
 os.environ["MAILGUN_DOMAIN"] = "test.mailgun.org"
 os.environ["MAILGUN_FROM_EMAIL"] = "test@test.mailgun.org"
 os.environ["REDIS_URL"] = "redis://localhost:6379/0"
+os.environ["ENVIRONMENT"] = "development"
 
 import uuid
 from datetime import datetime, timezone
