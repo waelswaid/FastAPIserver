@@ -64,9 +64,9 @@ def user_login(db: Session, login_data: LoginRequest) -> tuple[str, str]:
         logger.warning("audit: event=login_failed_unverified email=%s reason=email_not_verified", login_data.email)
         raise HTTPException(status_code=403, detail="Please verify your email before logging in.")
     # user is ok to login 
-    role_claims = {"role": user.role}
-    access_token = jwt_gen.create_access_token(str(user.id), additional_claims=role_claims)
-    refresh_token = jwt_gen.create_refresh_token(str(user.id), additional_claims=role_claims)
+    claims = {"role": user.role, "email": user.email}
+    access_token = jwt_gen.create_access_token(str(user.id), additional_claims=claims)
+    refresh_token = jwt_gen.create_refresh_token(str(user.id), additional_claims=claims)
     logger.info("audit: event=login_success user_id=%s email=%s", user.id, user.email)
     return access_token, refresh_token
 
@@ -107,9 +107,9 @@ async def refresh_access_token(db: Session, refresh_token: str) -> tuple[str, st
     # blacklists the current token
     await add_to_blacklist(jti, datetime.fromtimestamp(payload["exp"], tz=timezone.utc))
 
-    role_claims = {"role": user.role}
-    access_token = jwt_gen.create_access_token(str(user.id), additional_claims=role_claims)
-    new_refresh_token = jwt_gen.create_refresh_token(str(user.id), additional_claims=role_claims)
+    claims = {"role": user.role, "email": user.email}
+    access_token = jwt_gen.create_access_token(str(user.id), additional_claims=claims)
+    new_refresh_token = jwt_gen.create_refresh_token(str(user.id), additional_claims=claims)
     logger.info("audit: event=token_refresh user_id=%s", user.id)
     return access_token, new_refresh_token
 
