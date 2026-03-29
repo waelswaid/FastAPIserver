@@ -1,6 +1,10 @@
+import uuid
+from datetime import datetime, timezone
+
 import requests
 
 from app.models.pending_action import PendingAction
+from app.models.user import User
 from app.services.auth_services import ACTION_PASSWORD_RESET_CODE, ACTION_PASSWORD_RESET_JTI
 
 
@@ -88,3 +92,25 @@ def test_forgot_password_second_request_invalidates_first_token(
         json={"code": second_code, "new_password": "newpassword123"},
     )
     assert resp2.status_code == 200
+
+
+# OAuth-only user returns 200 but no email is sent (no info leakage)
+def test_forgot_password_oauth_user(client, db_session, mock_send_email):
+    user = User(
+        id=uuid.uuid4(),
+        first_name="OAuth",
+        last_name="User",
+        email="oauthuser@example.com",
+        password_hash="!oauth",
+        is_verified=True,
+        created_at=datetime.now(timezone.utc),
+    )
+    db_session.add(user)
+    db_session.flush()
+
+    resp = client.post(
+        "/api/auth/forgot-password",
+        json={"email": "oauthuser@example.com"},
+    )
+    assert resp.status_code == 200
+    mock_send_email.assert_not_called()

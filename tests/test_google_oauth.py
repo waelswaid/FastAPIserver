@@ -18,6 +18,8 @@ GOOGLE_USERINFO = {
     "email_verified": True,
 }
 
+OAUTH_STATE = "test-state-value"
+
 
 def _mock_google_api(userinfo=None):
     """Return a patcher that mocks both the token exchange and userinfo requests."""
@@ -42,6 +44,10 @@ def _mock_google_api(userinfo=None):
     return post_patcher, get_patcher
 
 
+def _callback_url(code="test-auth-code", state=OAUTH_STATE):
+    return f"/api/auth/google/callback?code={code}&state={state}"
+
+
 def _extract_token_from_redirect(resp):
     """Extract the access token from the redirect URL query params."""
     location = resp.headers["location"]
@@ -57,14 +63,40 @@ def test_google_redirect(client):
     assert resp.status_code == 307
     assert "accounts.google.com" in resp.headers["location"]
     assert "client_id=" in resp.headers["location"]
+    assert "oauth_state" in resp.cookies
+
+
+# --- State validation ---
+
+def test_google_callback_rejects_missing_state(client):
+    client.cookies.set("oauth_state", OAUTH_STATE)
+    resp = client.get("/api/auth/google/callback?code=test-code")
+    assert resp.status_code == 422
+
+
+def test_google_callback_rejects_mismatched_state(client):
+    client.cookies.set("oauth_state", OAUTH_STATE)
+    post_patch, get_patch = _mock_google_api()
+    with post_patch, get_patch:
+        resp = client.get(_callback_url(state="wrong-state"))
+    assert resp.status_code == 400
+    assert "state" in resp.json()["detail"].lower()
+
+
+def test_google_callback_rejects_missing_cookie(client):
+    post_patch, get_patch = _mock_google_api()
+    with post_patch, get_patch:
+        resp = client.get(_callback_url())
+    assert resp.status_code == 400
 
 
 # --- Callback: new user ---
 
 def test_google_callback_creates_new_user(client, db_session):
+    client.cookies.set("oauth_state", OAUTH_STATE)
     post_patch, get_patch = _mock_google_api()
     with post_patch, get_patch:
-        resp = client.get("/api/auth/google/callback?code=test-auth-code", follow_redirects=False)
+        resp = client.get(_callback_url(), follow_redirects=False)
 
     assert resp.status_code == 307
     assert "token=" in resp.headers["location"]
@@ -88,9 +120,10 @@ def test_google_callback_creates_new_user(client, db_session):
 def test_google_callback_links_existing_user(client, db_session, create_test_user):
     user, _ = create_test_user(email="oauth@example.com", password="existingpass123")
 
+    client.cookies.set("oauth_state", OAUTH_STATE)
     post_patch, get_patch = _mock_google_api()
     with post_patch, get_patch:
-        resp = client.get("/api/auth/google/callback?code=test-auth-code", follow_redirects=False)
+        resp = client.get(_callback_url(), follow_redirects=False)
 
     assert resp.status_code == 307
     assert "token=" in resp.headers["location"]
@@ -112,9 +145,10 @@ def test_google_callback_existing_oauth_account(client, db_session, create_test_
     db_session.add(oauth)
     db_session.flush()
 
+    client.cookies.set("oauth_state", OAUTH_STATE)
     post_patch, get_patch = _mock_google_api()
     with post_patch, get_patch:
-        resp = client.get("/api/auth/google/callback?code=test-auth-code", follow_redirects=False)
+        resp = client.get(_callback_url(), follow_redirects=False)
 
     assert resp.status_code == 307
     assert "token=" in resp.headers["location"]
@@ -135,9 +169,10 @@ def test_google_callback_disabled_user(client, db_session, create_test_user):
     db_session.add(oauth)
     db_session.flush()
 
+    client.cookies.set("oauth_state", OAUTH_STATE)
     post_patch, get_patch = _mock_google_api()
     with post_patch, get_patch:
-        resp = client.get("/api/auth/google/callback?code=test-auth-code")
+        resp = client.get(_callback_url())
 
     assert resp.status_code == 403
 
@@ -149,9 +184,10 @@ def test_google_callback_disabled_user_by_email(client, db_session, create_test_
     user.is_disabled = True
     db_session.flush()
 
+    client.cookies.set("oauth_state", OAUTH_STATE)
     post_patch, get_patch = _mock_google_api()
     with post_patch, get_patch:
-        resp = client.get("/api/auth/google/callback?code=test-auth-code")
+        resp = client.get(_callback_url())
 
     assert resp.status_code == 403
 
@@ -165,9 +201,10 @@ def test_google_callback_verifies_unverified_user(client, db_session, create_tes
         is_verified=False,
     )
 
+    client.cookies.set("oauth_state", OAUTH_STATE)
     post_patch, get_patch = _mock_google_api()
     with post_patch, get_patch:
-        resp = client.get("/api/auth/google/callback?code=test-auth-code", follow_redirects=False)
+        resp = client.get(_callback_url(), follow_redirects=False)
 
     assert resp.status_code == 307
     db_session.refresh(user)
@@ -183,8 +220,9 @@ def test_google_callback_token_exchange_failure(client):
         resp.json.return_value = {"error": "invalid_grant"}
         return resp
 
+    client.cookies.set("oauth_state", OAUTH_STATE)
     with patch("app.services.oauth_service.http_requests.post", side_effect=fail_post):
-        resp = client.get("/api/auth/google/callback?code=bad-code")
+        resp = client.get(_callback_url(code="bad-code"))
 
     assert resp.status_code == 400
 
@@ -214,8 +252,9 @@ def test_change_password_blocked_for_oauth_user(client, db_session):
     login_post_patch, login_get_patch = _mock_google_api(
         userinfo={**GOOGLE_USERINFO, "email": "oauthonly@example.com"}
     )
+    client.cookies.set("oauth_state", OAUTH_STATE)
     with login_post_patch, login_get_patch:
-        login_resp = client.get("/api/auth/google/callback?code=test-code", follow_redirects=False)
+        login_resp = client.get(_callback_url(code="test-code"), follow_redirects=False)
     token = _extract_token_from_redirect(login_resp)
 
     resp = client.post(
@@ -245,8 +284,9 @@ def test_delete_account_blocked_for_oauth_user(client, db_session):
     login_post_patch, login_get_patch = _mock_google_api(
         userinfo={**GOOGLE_USERINFO, "email": "oauthdelete@example.com"}
     )
+    client.cookies.set("oauth_state", OAUTH_STATE)
     with login_post_patch, login_get_patch:
-        login_resp = client.get("/api/auth/google/callback?code=test-code", follow_redirects=False)
+        login_resp = client.get(_callback_url(code="test-code"), follow_redirects=False)
     token = _extract_token_from_redirect(login_resp)
 
     resp = client.request(

@@ -151,15 +151,27 @@ def route_accept_invite(body: AcceptInviteRequest, db: Session = Depends(get_db)
 def route_google_login():
     state = secrets.token_urlsafe(32)
     url = get_google_auth_url(state)
-    return RedirectResponse(url=url)
+    response = RedirectResponse(url=url)
+    response.set_cookie(
+        key="oauth_state",
+        value=state,
+        httponly=True,
+        secure=settings.ENVIRONMENT == "production",
+        samesite="lax",
+        max_age=600,
+    )
+    return response
 
 
 @auth_router.get("/google/callback", dependencies=[Depends(oauth_limiter)])
-def route_google_callback(code: str, db: Session = Depends(get_db)):
+def route_google_callback(code: str, state: str, oauth_state: Optional[str] = Cookie(None), db: Session = Depends(get_db)):
+    if oauth_state is None or state != oauth_state:
+        raise HTTPException(status_code=400, detail="Invalid OAuth state")
     access_token, refresh_token = google_callback(db, code)
     frontend_url = settings.OAUTH_FRONTEND_REDIRECT_URL or settings.CORS_ORIGINS.split(",")[0].strip()
     redirect_url = f"{frontend_url}/oauth-callback?token={access_token}"
     response = RedirectResponse(url=redirect_url)
+    response.delete_cookie("oauth_state")
     response.set_cookie(
         key="refresh_token",
         value=refresh_token,

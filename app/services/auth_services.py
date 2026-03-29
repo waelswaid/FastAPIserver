@@ -144,7 +144,7 @@ async def logout(token: str, refresh_token: str | None = None) -> None:
 
 async def request_password_reset(db: Session, email: str) -> None:
     user = find_user_by_email(db, email)
-    if user is None or not user.is_verified:
+    if user is None or not user.is_verified or user.password_hash == "!oauth":
         return
 
     code = str(uuid.uuid4())
