@@ -303,6 +303,8 @@ def reset_password_via_code(db: Session, code: str, new_password: str) -> None:
 
 
 def change_password(db: Session, user: User, current_password: str, new_password: str) -> None:
+    if user.password_hash == "!oauth":
+        raise HTTPException(status_code=400, detail="Password change is not available for OAuth accounts. Set a password first.")
     if not verify_password(current_password, user.password_hash):
         raise HTTPException(status_code=400, detail="Current password is incorrect")
 

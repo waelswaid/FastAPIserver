@@ -46,6 +46,7 @@ class Settings(BaseSettings):
     RATE_LIMIT_FORCE_RESET: int = 20
     RATE_LIMIT_INVITE: int = 20
     RATE_LIMIT_ACCEPT_INVITE: int = 10
+    RATE_LIMIT_OAUTH: int = 20
 
     # Invite
     INVITE_URL: Optional[str] = None
@@ -54,6 +55,11 @@ class Settings(BaseSettings):
     # lockout limits
     MAX_ATTEMPTS_UNTILL_LOCKOUT: int = 10
     LOCKOUT_TIME_SECONDS: int = 900
+
+    # Google OAuth
+    GOOGLE_CLIENT_ID: Optional[str] = None
+    GOOGLE_CLIENT_SECRET: Optional[str] = None
+    GOOGLE_REDIRECT_URI: Optional[str] = None
 
     model_config = SettingsConfigDict(
         env_file=".env",

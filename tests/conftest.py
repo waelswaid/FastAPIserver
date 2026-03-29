@@ -25,6 +25,9 @@ os.environ["MAILGUN_DOMAIN"] = "test.mailgun.org"
 os.environ["MAILGUN_FROM_EMAIL"] = "test@test.mailgun.org"
 os.environ["REDIS_URL"] = "redis://localhost:6379/0"
 os.environ["ENVIRONMENT"] = "development"
+os.environ["GOOGLE_CLIENT_ID"] = "test-google-client-id"
+os.environ["GOOGLE_CLIENT_SECRET"] = "test-google-client-secret"
+os.environ["GOOGLE_REDIRECT_URI"] = "http://localhost:8000/api/auth/google/callback"
 
 import uuid
 from datetime import datetime, timezone
@@ -39,6 +42,7 @@ from app.models.base import Base
 from app.database.session import get_db
 from app.main import app
 from app.models.user import User
+from app.models.oauth_account import OAuthAccount  # noqa: F401 — register table
 from app.utils.security.password_hash import hash_password
 
 

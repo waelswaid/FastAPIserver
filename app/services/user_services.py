@@ -32,6 +32,8 @@ def user_create(db: Session, user: UserCreate):
 
 
 async def delete_own_account(db: Session, user: User, password: str, access_token: str, refresh_token: str | None = None) -> None:
+    if user.password_hash == "!oauth":
+        raise HTTPException(status_code=400, detail="OAuth accounts cannot be deleted with a password. Contact an administrator.")
     if not verify_password(password, user.password_hash):
         raise HTTPException(status_code=400, detail="Incorrect password")
 

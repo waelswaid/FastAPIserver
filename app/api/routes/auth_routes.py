@@ -1,5 +1,11 @@
+import logging
+import secrets
+from typing import Optional
+
 from fastapi import APIRouter, Depends, Response, Cookie, HTTPException
+from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
+
 from app.database.session import get_db
 from app.schemas.login_request import LoginRequest
 from app.schemas.token_response import TokenResponse
@@ -10,6 +16,7 @@ from app.services.auth_services import (
     verify_email_code, reset_password_via_code, validate_reset_code, change_password,
     accept_invite, validate_invite_code,
 )
+from app.services.oauth_service import get_google_auth_url, google_callback
 from app.schemas.admin_schema import AcceptInviteRequest
 from app.api.dependencies.auth_dependency import oauth2_scheme, get_current_user
 from app.models.user import User
@@ -17,11 +24,9 @@ from app.api.dependencies.rate_limiter import (
     forgot_password_limiter, resend_verification_limiter, reset_password_limiter,
     login_limiter, login_global_limiter, refresh_limiter,
     verify_email_limiter, validate_reset_code_limiter, change_password_limiter,
-    lockout_limiter, accept_invite_limiter,
+    lockout_limiter, accept_invite_limiter, oauth_limiter,
 )
 from app.core.config import settings
-from typing import Optional
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -140,3 +145,24 @@ def route_validate_invite_code(code: str, db: Session = Depends(get_db)):
 def route_accept_invite(body: AcceptInviteRequest, db: Session = Depends(get_db)):
     accept_invite(db, body.code, body.first_name, body.last_name, body.password)
     return {"message": "Account activated. You can now log in."}
+
+
+@auth_router.get("/google", dependencies=[Depends(oauth_limiter)])
+def route_google_login():
+    state = secrets.token_urlsafe(32)
+    url = get_google_auth_url(state)
+    return RedirectResponse(url=url)
+
+
+@auth_router.get("/google/callback", dependencies=[Depends(oauth_limiter)])
+def route_google_callback(code: str, response: Response, db: Session = Depends(get_db)):
+    access_token, refresh_token = google_callback(db, code)
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        httponly=True,
+        secure=settings.ENVIRONMENT == "production",
+        samesite="strict",
+        max_age=jwt_gen.config.refresh_token_expiry_days * 86400,
+    )
+    return TokenResponse(access_token=access_token, token_type="bearer")

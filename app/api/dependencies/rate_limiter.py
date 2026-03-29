@@ -306,4 +306,9 @@ accept_invite_limiter = RateLimiter(
     max_requests=settings.RATE_LIMIT_ACCEPT_INVITE,
 )
 
+oauth_limiter = RateLimiter(
+    name="oauth",
+    max_requests=settings.RATE_LIMIT_OAUTH,
+)
+
 lockout_limiter = AccountLockout()
