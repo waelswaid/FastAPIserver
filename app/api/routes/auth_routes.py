@@ -155,8 +155,11 @@ def route_google_login():
 
 
 @auth_router.get("/google/callback", dependencies=[Depends(oauth_limiter)])
-def route_google_callback(code: str, response: Response, db: Session = Depends(get_db)):
+def route_google_callback(code: str, db: Session = Depends(get_db)):
     access_token, refresh_token = google_callback(db, code)
+    frontend_url = settings.OAUTH_FRONTEND_REDIRECT_URL or settings.CORS_ORIGINS.split(",")[0].strip()
+    redirect_url = f"{frontend_url}/oauth-callback?token={access_token}"
+    response = RedirectResponse(url=redirect_url)
     response.set_cookie(
         key="refresh_token",
         value=refresh_token,
@@ -165,4 +168,4 @@ def route_google_callback(code: str, response: Response, db: Session = Depends(g
         samesite="strict",
         max_age=jwt_gen.config.refresh_token_expiry_days * 86400,
     )
-    return TokenResponse(access_token=access_token, token_type="bearer")
+    return response

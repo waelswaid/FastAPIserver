@@ -28,6 +28,7 @@ os.environ["ENVIRONMENT"] = "development"
 os.environ["GOOGLE_CLIENT_ID"] = "test-google-client-id"
 os.environ["GOOGLE_CLIENT_SECRET"] = "test-google-client-secret"
 os.environ["GOOGLE_REDIRECT_URI"] = "http://localhost:8000/api/auth/google/callback"
+os.environ["OAUTH_FRONTEND_REDIRECT_URL"] = "http://localhost:5173"
 
 import uuid
 from datetime import datetime, timezone

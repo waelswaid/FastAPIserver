@@ -60,6 +60,7 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_ID: Optional[str] = None
     GOOGLE_CLIENT_SECRET: Optional[str] = None
     GOOGLE_REDIRECT_URI: Optional[str] = None
+    OAUTH_FRONTEND_REDIRECT_URL: Optional[str] = None
 
     model_config = SettingsConfigDict(
         env_file=".env",

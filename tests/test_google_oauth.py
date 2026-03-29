@@ -1,6 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 from unittest.mock import patch, MagicMock
+from urllib.parse import urlparse, parse_qs
 
 import pytest
 
@@ -41,6 +42,14 @@ def _mock_google_api(userinfo=None):
     return post_patcher, get_patcher
 
 
+def _extract_token_from_redirect(resp):
+    """Extract the access token from the redirect URL query params."""
+    location = resp.headers["location"]
+    parsed = urlparse(location)
+    params = parse_qs(parsed.query)
+    return params["token"][0]
+
+
 # --- Redirect ---
 
 def test_google_redirect(client):
@@ -55,12 +64,10 @@ def test_google_redirect(client):
 def test_google_callback_creates_new_user(client, db_session):
     post_patch, get_patch = _mock_google_api()
     with post_patch, get_patch:
-        resp = client.get("/api/auth/google/callback?code=test-auth-code")
+        resp = client.get("/api/auth/google/callback?code=test-auth-code", follow_redirects=False)
 
-    assert resp.status_code == 200
-    data = resp.json()
-    assert "access_token" in data
-    assert data["token_type"] == "bearer"
+    assert resp.status_code == 307
+    assert "token=" in resp.headers["location"]
     assert "refresh_token" in resp.cookies
 
     user = db_session.query(User).filter(User.email == "oauth@example.com").first()
@@ -83,10 +90,10 @@ def test_google_callback_links_existing_user(client, db_session, create_test_use
 
     post_patch, get_patch = _mock_google_api()
     with post_patch, get_patch:
-        resp = client.get("/api/auth/google/callback?code=test-auth-code")
+        resp = client.get("/api/auth/google/callback?code=test-auth-code", follow_redirects=False)
 
-    assert resp.status_code == 200
-    assert "access_token" in resp.json()
+    assert resp.status_code == 307
+    assert "token=" in resp.headers["location"]
 
     oauth = db_session.query(OAuthAccount).filter(OAuthAccount.user_id == user.id).first()
     assert oauth is not None
@@ -107,10 +114,10 @@ def test_google_callback_existing_oauth_account(client, db_session, create_test_
 
     post_patch, get_patch = _mock_google_api()
     with post_patch, get_patch:
-        resp = client.get("/api/auth/google/callback?code=test-auth-code")
+        resp = client.get("/api/auth/google/callback?code=test-auth-code", follow_redirects=False)
 
-    assert resp.status_code == 200
-    assert "access_token" in resp.json()
+    assert resp.status_code == 307
+    assert "token=" in resp.headers["location"]
 
 
 # --- Callback: disabled user rejected ---
@@ -160,9 +167,9 @@ def test_google_callback_verifies_unverified_user(client, db_session, create_tes
 
     post_patch, get_patch = _mock_google_api()
     with post_patch, get_patch:
-        resp = client.get("/api/auth/google/callback?code=test-auth-code")
+        resp = client.get("/api/auth/google/callback?code=test-auth-code", follow_redirects=False)
 
-    assert resp.status_code == 200
+    assert resp.status_code == 307
     db_session.refresh(user)
     assert user.is_verified is True
 
@@ -208,8 +215,8 @@ def test_change_password_blocked_for_oauth_user(client, db_session):
         userinfo={**GOOGLE_USERINFO, "email": "oauthonly@example.com"}
     )
     with login_post_patch, login_get_patch:
-        login_resp = client.get("/api/auth/google/callback?code=test-code")
-    token = login_resp.json()["access_token"]
+        login_resp = client.get("/api/auth/google/callback?code=test-code", follow_redirects=False)
+    token = _extract_token_from_redirect(login_resp)
 
     resp = client.post(
         "/api/auth/change-password",
@@ -239,8 +246,8 @@ def test_delete_account_blocked_for_oauth_user(client, db_session):
         userinfo={**GOOGLE_USERINFO, "email": "oauthdelete@example.com"}
     )
     with login_post_patch, login_get_patch:
-        login_resp = client.get("/api/auth/google/callback?code=test-code")
-    token = login_resp.json()["access_token"]
+        login_resp = client.get("/api/auth/google/callback?code=test-code", follow_redirects=False)
+    token = _extract_token_from_redirect(login_resp)
 
     resp = client.request(
         "DELETE",
