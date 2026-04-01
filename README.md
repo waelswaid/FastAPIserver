@@ -1,5 +1,7 @@
 # FastAPI Auth System
 
+> Want to understand the entire repo at a glance? Read it as a [book](docs/book.md).
+
 A production-ready authentication API built with FastAPI. Provides user registration, email verification, JWT-based authentication, password reset, Google OAuth, admin management, and Redis-backed rate limiting out of the box.
 
 Use it as a standalone auth backend or as the foundation for your own application.
