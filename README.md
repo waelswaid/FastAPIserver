@@ -121,7 +121,7 @@ Then paste the contents into `JWT_PRIVATE_KEY` and `JWT_PUBLIC_KEY` in your `.en
 
 | Method | Path | Auth | Rate Limited | Description |
 |--------|------|------|--------------|-------------|
-| GET | `/google` | No | 40/hr per IP | Redirects to Google consent screen |
+| GET | `/google` | No | 20/hr per IP | Redirects to Google consent screen |
 | GET | `/google/callback` | No | No | Handles Google redirect, issues tokens |
 
 On first login, if the email matches an existing account, the Google account is linked automatically. If the email is new, a new user is created (auto-verified, cannot password-login unless they set one via password reset).
@@ -140,45 +140,20 @@ All admin endpoints require the `admin` role.
 
 ## Environment Variables
 
-See `.env.example` for a complete template. Key variables:
+See `.env.example` for a complete template.
 
-| Variable | Description |
-|----------|-------------|
-| `DATABASE_URL` | PostgreSQL connection string |
-| `JWT_PRIVATE_KEY` | RSA private key for signing tokens |
-| `JWT_PUBLIC_KEY` | RSA public key for verifying tokens |
-| `JWT_ALGORITHM` | Signing algorithm (default: `RS256`) |
-| `ACCESS_TOKEN_EXPIRE_MINUTES` | Access token TTL (default: `30`) |
-| `MAILGUN_API_KEY` | Mailgun API key |
-| `MAILGUN_DOMAIN` | Mailgun sending domain |
-| `MAILGUN_FROM_EMAIL` | From address for emails |
-| `APP_BASE_URL` | Base URL for email links |
-| `PASSWORD_RESET_EXPIRE_MINUTES` | Reset code TTL (default: `15`) |
-| `EMAIL_VERIFICATION_EXPIRE_MINUTES` | Verification code TTL (default: `1440`) |
-| `REDIS_URL` | Redis connection string |
-| `CORS_ORIGINS` | Comma-separated allowed origins |
-| `GOOGLE_CLIENT_ID` | Google OAuth client ID |
-| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret |
-| `GOOGLE_REDIRECT_URI` | OAuth callback URL |
-| `INVITE_URL` | Frontend URL for invite links |
-| `INVITE_EXPIRE_MINUTES` | Invite code TTL (default: `4320` / 3 days) |
-| `MAX_ATTEMPTS_UNTILL_LOCKOUT` | Failed logins before lockout (default: `10`) |
-| `LOCKOUT_TIME_SECONDS` | Lockout duration (default: `900` / 15 min) |
 
 ## Architecture Diagrams
 
 See [Architecture Diagrams](docs/architecture-diagrams.md) for detailed Mermaid diagrams covering:
 
 1. **System Context** — auth-system and its external dependencies
-2. **Docker Deployment** — container orchestration
-3. **Application Layer Architecture** — service layer pattern (routes → services → repos → DB)
-4. **Middleware Pipeline** — CORS → logging → rate limit headers → routing
-5. **Database Schema** — ER diagram (users, pending_actions, oauth_accounts)
-6. **Authentication & Token Flow** — login, authenticated requests, refresh, logout
-7. **Password Reset Flow** — forgot → validate code → reset
-8. **Email Verification Flow** — registration → verify via code
-9. **Rate Limiting Architecture** — Redis sliding window
-10. **Auth Dependency & RBAC** — token validation and role checking
+2. **Application Layer Architecture** — service layer pattern (routes → services → repos → DB)
+3. **Database Schema** — ER diagram (users, pending_actions, oauth_accounts)
+4. **Authentication & Token Flow** — login, authenticated requests, refresh, logout
+5. **Password Reset Flow** — forgot → validate code → reset
+6. **Email Verification Flow** — registration → verify via code
+7. **Auth Dependency & RBAC** — token validation and role checking
 
 ## RBAC
 
@@ -204,21 +179,3 @@ Tests use a real PostgreSQL database with per-test transaction rollback. Redis i
 pytest tests/ -v
 pytest tests/ --cov=app --cov-report=term-missing
 ```
-
-## Documentation
-
-- [Architecture Diagrams](docs/architecture-diagrams.md) — system diagrams in Mermaid
-- [Microservice Architecture](docs/microservice-architecture.md) — how auth-system integrates with other services
-- [Rate Limiting](docs/redis-rate-limiting.md) — how the Redis sliding window counter works
-- [Docker Guide](docs/docker-guide.md) — Docker setup instructions
-- [CORS & Nginx](docs/cors_and_nginx.md) — CORS and reverse proxy configuration
-
-## Contributing
-
-Contributions are welcome! Please:
-
-1. Fork the repo
-2. Create a feature branch (`git checkout -b feature/my-feature`)
-3. Write tests for your changes
-4. Ensure all tests pass (`pytest tests/ -v`)
-5. Open a pull request
