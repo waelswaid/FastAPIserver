@@ -163,7 +163,7 @@ def route_google_login():
     return response
 
 
-@auth_router.get("/google/callback", dependencies=[Depends(oauth_limiter)])
+@auth_router.get("/google/callback")
 def route_google_callback(code: str, state: str, oauth_state: Optional[str] = Cookie(None), db: Session = Depends(get_db)):
     if oauth_state is None or state != oauth_state:
         raise HTTPException(status_code=400, detail="Invalid OAuth state")
