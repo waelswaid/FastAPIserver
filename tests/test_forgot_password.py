@@ -5,7 +5,7 @@ import requests
 
 from app.models.pending_action import PendingAction
 from app.models.user import User
-from app.services.auth_services import ACTION_PASSWORD_RESET_CODE, ACTION_PASSWORD_RESET_JTI
+from app.services.password_service import ACTION_PASSWORD_RESET_CODE, ACTION_PASSWORD_RESET_JTI
 
 
 # Verified user's email triggers a reset email (200, email sent)

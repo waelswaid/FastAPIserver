@@ -7,8 +7,10 @@ from app.repositories.pending_action_repository import upsert_action, find_actio
 from app.repositories.token_blacklist_repository import add_to_blacklist
 from app.utils.email import send_password_reset_email, send_invite_email
 from app.core.config import settings
-from app.services.auth_services import (
-    jwt_gen, ACTION_PASSWORD_RESET_JTI, ACTION_PASSWORD_RESET_CODE, ACTION_INVITE,
+from app.services.auth_services import jwt_gen
+from app.services.invite_service import ACTION_INVITE
+from app.services.password_service import (
+    ACTION_PASSWORD_RESET_JTI, upsert_reset_pair,
 )
 import uuid
 import logging
@@ -105,8 +107,7 @@ async def force_password_reset(db: Session, user_id: uuid.UUID) -> None:
     if prev_jti_action is not None:
         await add_to_blacklist(prev_jti_action.code, prev_jti_action.expires_at)
 
-    upsert_action(db, user.id, ACTION_PASSWORD_RESET_JTI, new_jti, new_jti_expires_at, commit=False)
-    upsert_action(db, user.id, ACTION_PASSWORD_RESET_CODE, code, expires_at, commit=False)
+    upsert_reset_pair(db, user.id, new_jti, new_jti_expires_at, code, expires_at)
     user.password_changed_at = datetime.now(timezone.utc)
     db.commit()
 
