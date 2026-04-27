@@ -89,9 +89,9 @@ async def blacklist_jwt(payload: dict) -> None:
 **Call sites that adopt this helper:**
 - `auth_services.refresh_access_token` — blacklist current refresh during rotation.
 - `auth_services.logout` — both the access-token branch and the refresh-token swallow branch.
-- `password_service.request_password_reset` — blacklist previous reset JTI.
-- `admin_services.force_password_reset` — blacklist previous reset JTI.
 - `user_services.delete_own_account` — both access and refresh blacklist sites.
+
+**Sites that do NOT adopt the helper:** `request_password_reset` and `force_password_reset` blacklist a previously stored action's `code`/`expires_at` directly — no JWT decode is involved at those sites, so the helper's payload-based signature does not fit. They continue to call `add_to_blacklist` directly.
 
 ### `app/services/password_service.py` (helper section)
 
