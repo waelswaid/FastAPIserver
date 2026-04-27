@@ -1,6 +1,4 @@
 """Unit tests for the domain exception hierarchy."""
-import pytest
-
 from app.exceptions import (
     DomainError,
     DuplicateEmailError,
