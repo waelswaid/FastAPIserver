@@ -17,6 +17,7 @@ from app.exceptions import (
     WrongTokenTypeError,
 )
 from app.api.exception_handlers import register_exception_handlers
+from app.repositories.oauth_account_repository import create_oauth_account
 from app.utils.tokens import JWTConfig, JWTUtility
 
 
@@ -140,3 +141,12 @@ def test_decode_wrong_type_raises_wrong_token_type_error():
     refresh_token = util.create_refresh_token("00000000-0000-0000-0000-000000000000")
     with pytest.raises(WrongTokenTypeError):
         util.decode_access_token(refresh_token)
+
+
+def test_create_oauth_account_duplicate_raises(db_session, create_test_user):
+    user, _ = create_test_user(email="oauth-dup@example.com")
+    create_oauth_account(db_session, user.id, "google", "google-sub-123")
+
+    other_user, _ = create_test_user(email="oauth-dup-2@example.com")
+    with pytest.raises(DuplicateOAuthAccountError):
+        create_oauth_account(db_session, other_user.id, "google", "google-sub-123")

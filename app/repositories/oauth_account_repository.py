@@ -1,8 +1,10 @@
 import uuid
 from typing import Optional, Sequence
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.exceptions import DuplicateOAuthAccountError
 from app.models.oauth_account import OAuthAccount
 
 
@@ -32,11 +34,17 @@ def create_oauth_account(
         provider_user_id=provider_user_id,
     )
     db.add(account)
-    if commit:
-        db.commit()
-        db.refresh(account)
-    else:
-        db.flush()
+    try:
+        if commit:
+            db.commit()
+            db.refresh(account)
+        else:
+            db.flush()
+    except IntegrityError:
+        db.rollback()
+        raise DuplicateOAuthAccountError(
+            "This account is already linked to another user."
+        )
     return account
 
 
