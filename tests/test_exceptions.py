@@ -1,4 +1,8 @@
 """Unit tests for the domain exception hierarchy."""
+import pytest
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
+
 from app.exceptions import (
     DomainError,
     DuplicateEmailError,
@@ -8,6 +12,7 @@ from app.exceptions import (
     ExpiredTokenError,
     WrongTokenTypeError,
 )
+from app.api.exception_handlers import register_exception_handlers
 
 
 def test_domain_error_is_base():
@@ -30,24 +35,17 @@ def test_exceptions_can_be_instantiated_with_message():
     assert str(DuplicateOAuthAccountError("link-dup")) == "link-dup"
 
 
-import pytest
-from fastapi import FastAPI
-from fastapi.testclient import TestClient
-
-from app.api.exception_handlers import register_exception_handlers
-
-
 def _build_probe_app() -> FastAPI:
     app = FastAPI()
     register_exception_handlers(app)
 
     @app.get("/probe-duplicate-email")
     def probe_dup_email():
-        raise DuplicateEmailError("A user with that email already exists.")
+        raise DuplicateEmailError()
 
     @app.get("/probe-duplicate-oauth")
     def probe_dup_oauth():
-        raise DuplicateOAuthAccountError("This account is already linked to another user.")
+        raise DuplicateOAuthAccountError()
 
     @app.get("/probe-invalid")
     def probe_invalid():
