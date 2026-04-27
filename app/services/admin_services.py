@@ -7,7 +7,6 @@ from app.repositories.pending_action_repository import upsert_action, find_actio
 from app.repositories.token_blacklist_repository import add_to_blacklist
 from app.utils.email import send_password_reset_email, send_invite_email
 from app.core.config import settings
-from app.exceptions import DuplicateEmailError
 from app.services.auth_services import (
     jwt_gen, ACTION_PASSWORD_RESET_JTI, ACTION_PASSWORD_RESET_CODE, ACTION_INVITE,
 )
@@ -72,10 +71,7 @@ def invite_user(db: Session, email: str) -> None:
         else:
             raise HTTPException(status_code=409, detail="A user with that email already exists")
     else:
-        try:
-            user = create_invited_user(db, email)
-        except DuplicateEmailError:
-            raise HTTPException(status_code=409, detail="A user with that email already exists")
+        user = create_invited_user(db, email)
 
     code = str(uuid.uuid4())
     expires_at = datetime.now(timezone.utc) + timedelta(minutes=settings.INVITE_EXPIRE_MINUTES)

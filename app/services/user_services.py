@@ -5,7 +5,7 @@ from app.repositories.user_repository import find_user_by_id_for_update, delete_
 from app.repositories.token_blacklist_repository import add_to_blacklist
 from app.services.auth_services import send_verification_email_for_user, jwt_gen
 from app.utils.security.password_hash import verify_password
-from app.exceptions import DuplicateEmailError, TokenError
+from app.exceptions import TokenError
 from app.models.user import User
 from fastapi import HTTPException
 from datetime import datetime, timezone
@@ -16,10 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 def user_create(db: Session, user: UserCreate):
-    try:
-        new_user = user_repository.create_user(db=db, user_in=user)
-    except DuplicateEmailError as e:
-        raise HTTPException(status_code=409, detail=str(e))
+    new_user = user_repository.create_user(db=db, user_in=user)
     logger.info("audit: event=registration user_id=%s email=%s", new_user.id, new_user.email)
     try:
         send_verification_email_for_user(db, new_user)
