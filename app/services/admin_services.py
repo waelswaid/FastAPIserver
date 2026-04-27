@@ -69,7 +69,7 @@ def invite_user(db: Session, email: str) -> None:
         if existing.password_hash == "!invited" and not existing.is_verified:
             user = existing
         else:
-            raise HTTPException(status_code=409, detail="A user with that email already exists")
+            raise HTTPException(status_code=409, detail="A user with that email already exists.")
     else:
         user = create_invited_user(db, email)
 
