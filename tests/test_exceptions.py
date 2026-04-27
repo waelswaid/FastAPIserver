@@ -150,3 +150,12 @@ def test_create_oauth_account_duplicate_raises(db_session, create_test_user):
     other_user, _ = create_test_user(email="oauth-dup-2@example.com")
     with pytest.raises(DuplicateOAuthAccountError):
         create_oauth_account(db_session, other_user.id, "google", "google-sub-123")
+
+
+def test_create_oauth_account_duplicate_raises_on_flush(db_session, create_test_user):
+    user, _ = create_test_user(email="oauth-flush-1@example.com")
+    create_oauth_account(db_session, user.id, "google", "google-sub-flush")
+
+    other_user, _ = create_test_user(email="oauth-flush-2@example.com")
+    with pytest.raises(DuplicateOAuthAccountError):
+        create_oauth_account(db_session, other_user.id, "google", "google-sub-flush", commit=False)
