@@ -1,7 +1,8 @@
 from datetime import datetime, timezone, timedelta
 
 from app.models.pending_action import PendingAction
-from app.services.auth_services import jwt_gen, ACTION_PASSWORD_RESET_CODE, ACTION_PASSWORD_RESET_JTI
+from app.services.auth_services import jwt_gen
+from app.services.password_service import ACTION_PASSWORD_RESET_CODE, ACTION_PASSWORD_RESET_JTI
 
 
 # GET with valid reset code returns 200 and echoes the code back

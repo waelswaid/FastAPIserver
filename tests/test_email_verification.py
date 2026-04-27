@@ -1,7 +1,8 @@
 from datetime import datetime, timezone, timedelta
 
 from app.models.pending_action import PendingAction
-from app.services.auth_services import jwt_gen, ACTION_EMAIL_VERIFICATION_CODE
+from app.services.auth_services import jwt_gen
+from app.services.email_verification_service import ACTION_EMAIL_VERIFICATION_CODE
 
 
 # Valid verification code sets is_verified=True (200)

@@ -12,10 +12,15 @@ from app.schemas.token_response import TokenResponse
 from app.schemas.password_reset_schema import ForgotPasswordRequest, ResetPasswordRequest, VerifyEmailRequest, ChangePasswordRequest
 from app.services.auth_services import (
     user_login, refresh_access_token, logout, jwt_gen,
-    request_password_reset, reset_password, verify_email_token, resend_verification_email,
-    verify_email_code, reset_password_via_code, validate_reset_code, change_password,
-    accept_invite, validate_invite_code,
 )
+from app.services.password_service import (
+    request_password_reset, reset_password,
+    reset_password_via_code, validate_reset_code, change_password,
+)
+from app.services.email_verification_service import (
+    verify_email_token, resend_verification_email, verify_email_code,
+)
+from app.services.invite_service import accept_invite, validate_invite_code
 from app.services.oauth_service import get_google_auth_url, google_callback
 from app.schemas.admin_schema import AcceptInviteRequest
 from app.api.dependencies.auth_dependency import oauth2_scheme, get_current_user

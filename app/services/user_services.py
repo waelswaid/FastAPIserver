@@ -2,13 +2,13 @@ from app.schemas.users_schema import UserCreate
 from sqlalchemy.orm import Session
 from app.repositories import user_repository
 from app.repositories.user_repository import find_user_by_id_for_update, delete_user
-from app.repositories.token_blacklist_repository import add_to_blacklist
-from app.services.auth_services import send_verification_email_for_user, jwt_gen
+from app.services.auth_services import jwt_gen
+from app.services.email_verification_service import send_verification_email_for_user
+from app.services._token_helpers import blacklist_jwt
 from app.utils.security.password_hash import verify_password
 from app.exceptions import TokenError
 from app.models.user import User
 from fastapi import HTTPException
-from datetime import datetime, timezone
 import requests
 import logging
 
@@ -43,7 +43,7 @@ async def delete_own_account(db: Session, user: User, password: str, access_toke
         jti = payload.get("jti")
         exp = payload.get("exp")
         if jti and exp:
-            await add_to_blacklist(jti, datetime.fromtimestamp(exp, tz=timezone.utc))
+            await blacklist_jwt(payload)
     except TokenError:
         pass
 
@@ -53,7 +53,7 @@ async def delete_own_account(db: Session, user: User, password: str, access_toke
             rt_jti = rt_payload.get("jti")
             rt_exp = rt_payload.get("exp")
             if rt_jti and rt_exp:
-                await add_to_blacklist(rt_jti, datetime.fromtimestamp(rt_exp, tz=timezone.utc))
+                await blacklist_jwt(rt_payload)
         except TokenError:
             pass
 
