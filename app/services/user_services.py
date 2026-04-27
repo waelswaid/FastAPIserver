@@ -5,7 +5,7 @@ from app.repositories.user_repository import find_user_by_id_for_update, delete_
 from app.repositories.token_blacklist_repository import add_to_blacklist
 from app.services.auth_services import send_verification_email_for_user, jwt_gen
 from app.utils.security.password_hash import verify_password
-from app.exceptions import DuplicateEmailError
+from app.exceptions import DuplicateEmailError, TokenError
 from app.models.user import User
 from fastapi import HTTPException
 from datetime import datetime, timezone
@@ -47,7 +47,7 @@ async def delete_own_account(db: Session, user: User, password: str, access_toke
         exp = payload.get("exp")
         if jti and exp:
             await add_to_blacklist(jti, datetime.fromtimestamp(exp, tz=timezone.utc))
-    except ValueError:
+    except TokenError:
         pass
 
     if refresh_token is not None:
@@ -57,7 +57,7 @@ async def delete_own_account(db: Session, user: User, password: str, access_toke
             rt_exp = rt_payload.get("exp")
             if rt_jti and rt_exp:
                 await add_to_blacklist(rt_jti, datetime.fromtimestamp(rt_exp, tz=timezone.utc))
-        except ValueError:
+        except TokenError:
             pass
 
     user_id = locked_user.id

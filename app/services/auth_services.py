@@ -2,6 +2,7 @@ from app.repositories.user_repository import (
     find_user_by_email, find_user_by_id, find_user_by_id_for_update,
     update_password, verify_user, set_invited_user_profile,
 )
+from app.exceptions import TokenError
 from app.repositories.pending_action_repository import (
     upsert_action, find_action_by_user_and_type,
     find_user_by_action_code_for_update, delete_action,
@@ -138,7 +139,7 @@ async def logout(token: str, refresh_token: str | None = None) -> None:
             if rt_jti is not None and rt_exp is not None:
                 rt_expires_at = datetime.fromtimestamp(rt_exp, tz=timezone.utc)
                 await add_to_blacklist(rt_jti, rt_expires_at)
-        except ValueError:
+        except TokenError:
             pass
 
 
@@ -199,7 +200,7 @@ def resend_verification_email(db: Session, email: str) -> None:
 async def verify_email_token(db: Session, token: str) -> None:
     try:
         payload = jwt_gen.decode_email_verification_token(token)
-    except ValueError:
+    except TokenError:
         raise HTTPException(status_code=400, detail="Invalid or expired verification token")
 
     jti = payload.get("jti")
@@ -233,7 +234,7 @@ async def verify_email_token(db: Session, token: str) -> None:
 async def reset_password(db: Session, token: str, new_password: str) -> None:
     try:
         payload = jwt_gen.decode_password_reset_token(token)
-    except ValueError:
+    except TokenError:
         raise HTTPException(status_code=400, detail="Invalid or expired reset token")
 
     jti = payload.get("jti")

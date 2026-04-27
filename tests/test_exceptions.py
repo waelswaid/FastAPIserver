@@ -1,8 +1,12 @@
 """Unit tests for the domain exception hierarchy."""
+from datetime import datetime, timedelta, timezone
+
+import jwt as pyjwt
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
+from app.core.config import settings
 from app.exceptions import (
     DomainError,
     DuplicateEmailError,
@@ -13,6 +17,7 @@ from app.exceptions import (
     WrongTokenTypeError,
 )
 from app.api.exception_handlers import register_exception_handlers
+from app.utils.tokens import JWTConfig, JWTUtility
 
 
 def test_domain_error_is_base():
@@ -95,3 +100,43 @@ def test_handler_wrong_token_type_returns_401(probe_client):
     resp = probe_client.get("/probe-wrong-type")
     assert resp.status_code == 401
     assert resp.json() == {"detail": "Invalid token type"}
+
+
+def _make_jwt_utility() -> JWTUtility:
+    return JWTUtility(
+        JWTConfig(
+            private_key=settings.JWT_PRIVATE_KEY,
+            public_key=settings.JWT_PUBLIC_KEY,
+            algorithm=settings.JWT_ALGORITHM,
+        )
+    )
+
+
+def test_decode_garbage_token_raises_invalid_token_error():
+    util = _make_jwt_utility()
+    with pytest.raises(InvalidTokenError):
+        util.decode_access_token("not-a-jwt")
+
+
+def test_decode_expired_token_raises_expired_token_error():
+    util = _make_jwt_utility()
+    expired = pyjwt.encode(
+        {
+            "sub": "00000000-0000-0000-0000-000000000000",
+            "type": "access",
+            "iat": datetime.now(timezone.utc) - timedelta(hours=2),
+            "exp": datetime.now(timezone.utc) - timedelta(hours=1),
+            "jti": "x",
+        },
+        settings.JWT_PRIVATE_KEY,
+        algorithm=settings.JWT_ALGORITHM,
+    )
+    with pytest.raises(ExpiredTokenError):
+        util.decode_access_token(expired)
+
+
+def test_decode_wrong_type_raises_wrong_token_type_error():
+    util = _make_jwt_utility()
+    refresh_token = util.create_refresh_token("00000000-0000-0000-0000-000000000000")
+    with pytest.raises(WrongTokenTypeError):
+        util.decode_access_token(refresh_token)

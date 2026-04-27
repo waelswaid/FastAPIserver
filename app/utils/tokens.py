@@ -6,7 +6,13 @@ from typing import Any, Dict
 import uuid
 
 import jwt
-from jwt import ExpiredSignatureError, InvalidTokenError
+from jwt import ExpiredSignatureError
+from jwt import InvalidTokenError as JWTInvalidTokenError
+from app.exceptions import (
+    InvalidTokenError,
+    ExpiredTokenError,
+    WrongTokenTypeError,
+)
 
 
 
@@ -97,16 +103,16 @@ class JWTUtility:
                 algorithms=[self.config.algorithm],
             )
         except ExpiredSignatureError as exc:
-            raise ValueError("Token has expired") from exc
-        except InvalidTokenError as exc:
-            raise ValueError("Invalid token") from exc
+            raise ExpiredTokenError() from exc
+        except JWTInvalidTokenError as exc:
+            raise InvalidTokenError() from exc
         
 
     # public decode and signature verification method
     def decode_access_token(self, token: str) -> Dict[str, Any]:
         payload = self._decode_token(token)
         if payload.get("type") != "access":
-            raise ValueError("Invalid token type: expected access token")
+            raise WrongTokenTypeError()
         return payload
     
 
@@ -114,7 +120,7 @@ class JWTUtility:
     def decode_refresh_token(self, token: str) -> Dict[str, Any]:
         payload = self._decode_token(token)
         if payload.get("type") != "refresh":
-            raise ValueError("Invalid token type: expected refresh token")
+            raise WrongTokenTypeError()
         return payload
 
     # public method to create a short-lived password reset token
@@ -129,7 +135,7 @@ class JWTUtility:
     def decode_password_reset_token(self, token: str) -> Dict[str, Any]:
         payload = self._decode_token(token)
         if payload.get("type") != "password_reset":
-            raise ValueError("Invalid token type: expected password reset token")
+            raise WrongTokenTypeError()
         return payload
 
     # public method to create a short-lived email verification token
@@ -144,5 +150,5 @@ class JWTUtility:
     def decode_email_verification_token(self, token: str) -> Dict[str, Any]:
         payload = self._decode_token(token)
         if payload.get("type") != "email_verification":
-            raise ValueError("Invalid token type: expected email verification token")
+            raise WrongTokenTypeError()
         return payload
