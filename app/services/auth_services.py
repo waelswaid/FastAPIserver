@@ -73,10 +73,7 @@ def user_login(db: Session, login_data: LoginRequest) -> tuple[str, str]:
 
 
 async def refresh_access_token(db: Session, refresh_token: str) -> tuple[str, str]:
-    try:
-        payload = jwt_gen.decode_refresh_token(refresh_token)
-    except ValueError:
-        raise HTTPException(status_code=401, detail="Invalid or expired refresh token")
+    payload = jwt_gen.decode_refresh_token(refresh_token)
     # this is user_id but in string format
     sub = payload.get("sub")
     if sub is None:
@@ -116,11 +113,7 @@ async def refresh_access_token(db: Session, refresh_token: str) -> tuple[str, st
 
 # extracts jti and expiry from access and refresh tokens and sends them to redis for blacklisting
 async def logout(token: str, refresh_token: str | None = None) -> None:
-    try:
-        # extracts the payload from the token
-        payload = jwt_gen.decode_access_token(token)
-    except ValueError:
-        raise HTTPException(status_code=401, detail="Invalid token")
+    payload = jwt_gen.decode_access_token(token)
 
     jti = payload.get("jti")
     exp = payload.get("exp")
