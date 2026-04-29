@@ -6,9 +6,28 @@ from app.core.config import settings
 logger = logging.getLogger(__name__)
 
 
+def _is_dev_mode() -> bool:
+    """In any non-production environment, skip the Mailgun call and log
+    codes to the standard logger instead. See spec
+    docs/superpowers/specs/2026-04-29-dev-mode-design.md."""
+    return settings.ENVIRONMENT != "production"
+
+
+def _log_dev_email(email_type: str, recipient: str, code: str, link: str) -> None:
+    """Audit-style log line for dev-mode emails. Greppable via event=dev_email."""
+    logger.info(
+        "audit: event=dev_email type=%s recipient=%s code=%s link=%s",
+        email_type, recipient, code, link,
+    )
+
+
 def send_password_reset_email(to_email: str, code: str) -> None:
     base = settings.PASSWORD_RESET_URL or f"{settings.APP_BASE_URL}/api/auth/reset-password"
     reset_link = f"{base}?code={code}"
+
+    if _is_dev_mode():
+        _log_dev_email("password_reset", to_email, code, reset_link)
+        return
 
     response = requests.post(
         f"{settings.MAILGUN_API_URL}/{settings.MAILGUN_DOMAIN}/messages",
@@ -34,6 +53,10 @@ def send_verification_email(to_email: str, code: str) -> None:
     base = settings.EMAIL_VERIFY_URL or f"{settings.APP_BASE_URL}/api/auth/verify-email"
     verification_link = f"{base}?code={code}"
 
+    if _is_dev_mode():
+        _log_dev_email("email_verification", to_email, code, verification_link)
+        return
+
     response = requests.post(
         f"{settings.MAILGUN_API_URL}/{settings.MAILGUN_DOMAIN}/messages",
         auth=("api", settings.MAILGUN_API_KEY),
@@ -57,6 +80,10 @@ def send_verification_email(to_email: str, code: str) -> None:
 def send_invite_email(to_email: str, code: str) -> None:
     base = settings.INVITE_URL or f"{settings.APP_BASE_URL}/api/auth/accept-invite"
     invite_link = f"{base}?code={code}"
+
+    if _is_dev_mode():
+        _log_dev_email("invite", to_email, code, invite_link)
+        return
 
     response = requests.post(
         f"{settings.MAILGUN_API_URL}/{settings.MAILGUN_DOMAIN}/messages",

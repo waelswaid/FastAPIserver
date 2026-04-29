@@ -36,7 +36,7 @@ def test_resend_nonexistent_email(client, mock_send_email):
 # Mailgun failure returns 503
 def test_resend_email_failure(client, unverified_user, mock_send_email):
     user, _ = unverified_user
-    mock_send_email.return_value.raise_for_status.side_effect = requests.RequestException("fail")
+    mock_send_email.side_effect = requests.RequestException("fail")
     resp = client.post(
         "/api/auth/resend-verification",
         json={"email": user.email},

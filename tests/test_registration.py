@@ -29,7 +29,7 @@ def test_register_duplicate_email(client, verified_user):
 
 # Mailgun failure during registration returns 500 (user is created but email not sent)
 def test_register_email_send_failure(client, mock_send_email):
-    mock_send_email.return_value.raise_for_status.side_effect = requests.RequestException("fail")
+    mock_send_email.side_effect = requests.RequestException("fail")
     resp = client.post(
         "/api/users/create",
         json={"first_name": "Bob", "last_name": "Jones", "email": "bob@example.com", "password": "strongpass123"},

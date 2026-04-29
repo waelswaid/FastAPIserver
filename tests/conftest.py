@@ -114,11 +114,14 @@ def client(db_session):
 
 @pytest.fixture(autouse=True)
 def mock_send_email():
-    with patch("app.utils.email.requests.post") as mock_post:
-        mock_response = MagicMock()
-        mock_response.raise_for_status = MagicMock()
-        mock_post.return_value = mock_response
-        yield mock_post
+    """Patch the email-sending functions where the service modules import them.
+    Tests can assert on call_args.args == (to_email, code)."""
+    mock = MagicMock()
+    with patch("app.services.email_verification_service.send_verification_email", mock), \
+         patch("app.services.password_service.send_password_reset_email", mock), \
+         patch("app.services.admin_services.send_password_reset_email", mock), \
+         patch("app.services.admin_services.send_invite_email", mock):
+        yield mock
 
 
 @pytest.fixture()

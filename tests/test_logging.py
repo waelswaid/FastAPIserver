@@ -4,6 +4,7 @@ from unittest.mock import patch, MagicMock
 
 import pytest
 
+from app.core.config import settings
 from app.core.logging import CorrelationIdFilter, JSONFormatter, correlation_id_var
 
 
@@ -86,7 +87,8 @@ class TestRequestLoggingMiddleware:
 
 
 class TestEmailSuccessLogging:
-    def test_password_reset_email_logs_success(self, caplog):
+    def test_password_reset_email_logs_success(self, caplog, monkeypatch):
+        monkeypatch.setattr(settings, "ENVIRONMENT", "production")
         with caplog.at_level(logging.INFO, logger="app.utils.email"):
             from app.utils.email import send_password_reset_email
             with patch("app.utils.email.requests.post") as mock_post:
@@ -96,7 +98,8 @@ class TestEmailSuccessLogging:
                 send_password_reset_email("test@example.com", "code123")
         assert any("Password reset email sent to=test@example.com" in r.message for r in caplog.records)
 
-    def test_verification_email_logs_success(self, caplog):
+    def test_verification_email_logs_success(self, caplog, monkeypatch):
+        monkeypatch.setattr(settings, "ENVIRONMENT", "production")
         with caplog.at_level(logging.INFO, logger="app.utils.email"):
             from app.utils.email import send_verification_email
             with patch("app.utils.email.requests.post") as mock_post:

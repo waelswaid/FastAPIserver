@@ -16,6 +16,7 @@ auth-system is a generic authentication system and must remain that way.
 - Rate limit all auth endpoints (login, register, reset)
 - Always hash passwords with the existing hash_password utility before storing
 - Auth endpoints must not leak whether an email exists — return identical responses for existing and non-existing emails on reset/verification flows
+- Dev-only console logging of verification/reset/invite codes is a deliberate exemption to the "never log codes" rule. It is gated by `settings.ENVIRONMENT != "production"` in `app/utils/email.py`. Production deployments must keep `ENVIRONMENT=production`.
 
 ## Database & Migrations
 - Always create an Alembic migration for every model change — never modify the DB manually

@@ -43,7 +43,7 @@ def test_forgot_password_unverified_user(client, unverified_user, mock_send_emai
 # Mailgun failure returns 503
 def test_forgot_password_email_failure(client, verified_user, mock_send_email):
     user, _ = verified_user
-    mock_send_email.return_value.raise_for_status.side_effect = requests.RequestException("fail")
+    mock_send_email.side_effect = requests.RequestException("fail")
     resp = client.post(
         "/api/auth/forgot-password",
         json={"email": user.email},

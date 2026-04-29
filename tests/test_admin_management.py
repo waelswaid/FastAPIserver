@@ -1,4 +1,3 @@
-import re
 import uuid
 
 
@@ -223,14 +222,7 @@ def test_force_reset_user_can_reset_via_code(client, create_test_user, mock_send
         headers=_auth_header(admin_token),
     )
 
-    # extract the code from the email call
-    call_args = mock_send_email.call_args
-    email_data = call_args[1]["data"] if "data" in call_args[1] else call_args[0][1] if len(call_args[0]) > 1 else None
-    # the code is in the email text - extract from the URL parameter
-    text_body = email_data.get("text", "")
-    match = re.search(r"code=([a-f0-9-]+)", text_body)
-    assert match, f"Could not find reset code in email body: {text_body}"
-    code = match.group(1)
+    code = mock_send_email.call_args.args[1]
 
     # validate the code
     resp = client.get(f"/api/auth/reset-password?code={code}")
@@ -280,12 +272,7 @@ def test_force_reset_forbidden_for_regular_user(client, create_test_user):
 
 
 def _extract_invite_code(mock_send_email):
-    call_args = mock_send_email.call_args
-    email_data = call_args[1]["data"] if "data" in call_args[1] else call_args[0][1]
-    text_body = email_data.get("text", "")
-    match = re.search(r"code=([a-f0-9-]+)", text_body)
-    assert match, f"Could not find invite code in email body: {text_body}"
-    return match.group(1)
+    return mock_send_email.call_args.args[1]
 
 
 def test_admin_invite_user_success(client, create_test_user, mock_send_email):

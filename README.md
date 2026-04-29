@@ -1,7 +1,5 @@
 # FastAPI Auth System
 
-> Want to understand the entire repo at a glance? Read it as a [book](docs/book.md).
-
 A production-ready authentication API built with FastAPI. Provides user registration, email verification, JWT-based authentication, password reset, Google OAuth, admin management, and Redis-backed rate limiting out of the box.
 
 Use it as a standalone auth backend or as the foundation for your own application.
@@ -83,6 +81,29 @@ openssl rsa -in private.pem -pubout -out public.pem
 ```
 
 Then paste the contents into `JWT_PRIVATE_KEY` and `JWT_PUBLIC_KEY` in your `.env` file.
+
+## Local development end-to-end
+
+To exercise every flow locally without Mailgun:
+
+1. Copy `.env.example` to `.env` (subsequent steps fill in values).
+2. Start Postgres and create the database referenced by `DATABASE_URL`.
+3. Generate JWT keys (see "Generating RSA keys" above) and paste into `.env`.
+4. In `.env`, set `ENVIRONMENT=development`. The three email helpers in `app/utils/email.py` will then log verification/reset/invite codes to the backend console instead of calling Mailgun.
+5. Run migrations and start the backend:
+   ```bash
+   alembic upgrade head
+   uvicorn app.main:app --reload
+   ```
+6. In another terminal, start the dev client:
+   ```bash
+   cd dev-client
+   npm install
+   npm run dev
+   ```
+7. Open http://localhost:5173. Trigger flows from the client UI. When the backend prints a code (e.g. `audit: event=dev_email type=password_reset recipient=... code=<uuid> link=...`), copy the code into the matching client form to complete the flow.
+
+Redis is optional in dev — rate limiting and token blacklist degrade silently if it isn't running. Google OAuth is optional — the "Sign in with Google" button returns 503 unless credentials are configured.
 
 ## API Endpoints
 
