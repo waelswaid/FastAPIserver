@@ -1,0 +1,32 @@
+# Auto-merged with docker-compose.yml on `docker compose up`.
+# Provides hot-reload, in-container tests, and an opt-in dev-client service.
+# To run prod-style (no overrides): `docker compose -f docker-compose.yml up`.
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./app:/app/app
+      - ./alembic.ini:/app/alembic.ini
+      - ./migrations:/app/migrations
+      - ./scripts:/app/scripts
+      - ./tests:/app/tests
+    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+    environment:
+      ENVIRONMENT: development
+      TEST_DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/fastapiapp_test
+
+  dev-client:
+    profiles: ["frontend"]
+    image: node:22-alpine
+    working_dir: /app
+    volumes:
+      - ./dev-client:/app
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    environment:
+      VITE_API_BASE_URL: http://localhost:8000

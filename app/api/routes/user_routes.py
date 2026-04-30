@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 user_router = APIRouter(tags=["users"])
 
 
-@user_router.post("/users/create", response_model=UserRead, dependencies=[Depends(registration_limiter)])
+@user_router.post("/users", response_model=UserRead, dependencies=[Depends(registration_limiter)])
 def signup(user: UserCreate, db: Session = Depends(get_db)):
     return user_create(db, user)
 

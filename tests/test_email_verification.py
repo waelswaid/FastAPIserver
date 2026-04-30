@@ -116,7 +116,7 @@ def test_verify_via_token_blacklisted_jti(client, unverified_user, fake_redis):
 # End-to-end: register -> verify via code -> login succeeds
 def test_verify_then_login_works(client, db_session):
     client.post(
-        "/api/users/create",
+        "/api/users",
         json={"first_name": "Flow", "last_name": "User", "email": "flow@example.com", "password": "flowpass1234"},
     )
 

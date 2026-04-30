@@ -4,7 +4,7 @@ import requests
 # Valid registration returns 200 with UserRead fields and sends verification email
 def test_register_success(client, mock_send_email):
     resp = client.post(
-        "/api/users/create",
+        "/api/users",
         json={"first_name": "Alice", "last_name": "Smith", "email": "alice@example.com", "password": "strongpass123"},
     )
     assert resp.status_code == 200
@@ -21,7 +21,7 @@ def test_register_success(client, mock_send_email):
 def test_register_duplicate_email(client, verified_user):
     user, _ = verified_user
     resp = client.post(
-        "/api/users/create",
+        "/api/users",
         json={"first_name": "Dup", "last_name": "User", "email": user.email, "password": "strongpass123"},
     )
     assert resp.status_code == 409
@@ -31,7 +31,7 @@ def test_register_duplicate_email(client, verified_user):
 def test_register_email_send_failure(client, mock_send_email):
     mock_send_email.side_effect = requests.RequestException("fail")
     resp = client.post(
-        "/api/users/create",
+        "/api/users",
         json={"first_name": "Bob", "last_name": "Jones", "email": "bob@example.com", "password": "strongpass123"},
     )
     assert resp.status_code == 500
@@ -40,7 +40,7 @@ def test_register_email_send_failure(client, mock_send_email):
 # Missing first_name field returns 422
 def test_register_missing_first_name(client):
     resp = client.post(
-        "/api/users/create",
+        "/api/users",
         json={"last_name": "User", "email": "test@example.com", "password": "strongpass123"},
     )
     assert resp.status_code == 422
@@ -49,7 +49,7 @@ def test_register_missing_first_name(client):
 # Missing last_name field returns 422
 def test_register_missing_last_name(client):
     resp = client.post(
-        "/api/users/create",
+        "/api/users",
         json={"first_name": "Test", "email": "test@example.com", "password": "strongpass123"},
     )
     assert resp.status_code == 422
@@ -58,7 +58,7 @@ def test_register_missing_last_name(client):
 # Missing email field returns 422
 def test_register_missing_email(client):
     resp = client.post(
-        "/api/users/create",
+        "/api/users",
         json={"first_name": "Test", "last_name": "User", "password": "strongpass123"},
     )
     assert resp.status_code == 422
@@ -67,7 +67,7 @@ def test_register_missing_email(client):
 # Missing password field returns 422
 def test_register_missing_password(client):
     resp = client.post(
-        "/api/users/create",
+        "/api/users",
         json={"first_name": "Test", "last_name": "User", "email": "test@example.com"},
     )
     assert resp.status_code == 422
@@ -76,7 +76,7 @@ def test_register_missing_password(client):
 # Password under 8 characters returns 422
 def test_register_short_password(client):
     resp = client.post(
-        "/api/users/create",
+        "/api/users",
         json={"first_name": "Test", "last_name": "User", "email": "test@example.com", "password": "short"},
     )
     assert resp.status_code == 422
@@ -85,7 +85,7 @@ def test_register_short_password(client):
 # Password over 128 characters returns 422
 def test_register_password_too_long(client):
     resp = client.post(
-        "/api/users/create",
+        "/api/users",
         json={"first_name": "Test", "last_name": "User", "email": "test@example.com", "password": "a" * 129},
     )
     assert resp.status_code == 422
@@ -94,7 +94,7 @@ def test_register_password_too_long(client):
 # Malformed email address returns 422
 def test_register_invalid_email_format(client):
     resp = client.post(
-        "/api/users/create",
+        "/api/users",
         json={"first_name": "Test", "last_name": "User", "email": "not-an-email", "password": "strongpass123"},
     )
     assert resp.status_code == 422
@@ -103,7 +103,7 @@ def test_register_invalid_email_format(client):
 # Response body does not expose password_hash or password
 def test_register_response_no_password_hash(client):
     resp = client.post(
-        "/api/users/create",
+        "/api/users",
         json={"first_name": "Safe", "last_name": "User", "email": "safe@example.com", "password": "strongpass123"},
     )
     assert resp.status_code == 200
@@ -115,7 +115,7 @@ def test_register_response_no_password_hash(client):
 # Newly registered user cannot login until email is verified (403)
 def test_register_user_cannot_login_before_verification(client):
     client.post(
-        "/api/users/create",
+        "/api/users",
         json={"first_name": "New", "last_name": "User", "email": "new@example.com", "password": "strongpass123"},
     )
     login_resp = client.post(

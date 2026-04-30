@@ -1,6 +1,6 @@
 # FastAPI Auth System
 
-A production-ready authentication API built with FastAPI. Provides user registration, email verification, JWT-based authentication, password reset, Google OAuth, admin management, and Redis-backed rate limiting out of the box.
+An authentication API built with FastAPI. Provides user registration, email verification, JWT-based authentication, password reset, Google OAuth, admin management, and Redis-backed rate limiting out of the box.
 
 Use it as a standalone auth backend or as the foundation for your own application.
 
@@ -56,7 +56,7 @@ The API will be available at `http://localhost:8000`. Interactive docs at `http:
 **Prerequisites:** Python 3.14+, PostgreSQL, Redis
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/auth-system.git
+git clone https://github.com/waelswaid/auth-system.git
 cd auth-system
 
 python -m venv venv
@@ -81,6 +81,31 @@ openssl rsa -in private.pem -pubout -out public.pem
 ```
 
 Then paste the contents into `JWT_PRIVATE_KEY` and `JWT_PUBLIC_KEY` in your `.env` file.
+
+### Docker dev workflow
+
+`docker-compose.override.yml` is auto-merged when you run `docker compose up`. It swaps the app service over to `Dockerfile.dev` (full deps, no source COPY), mounts the source as a volume, and runs uvicorn with `--reload`. The prod Dockerfile and `docker-compose.example.yml` are untouched.
+
+A `Makefile` at the repo root wraps the common commands. First-run setup (copies compose/env files, generates RSA keys into `.env`):
+
+```bash
+make bootstrap
+make backend-up       # start backend (hot reload)
+make frontend-up      # add the Vite dev-client at http://localhost:5173
+make logs             # watch dev codes printed by ENVIRONMENT=development
+make test             # run pytest in the container (creates test DB on first run)
+make admin EMAIL=you@example.com
+make down             # stop and remove all containers (backend + frontend)
+make help             # list all targets
+```
+
+Run prod-style (no override applied, no Make involvement):
+
+```bash
+docker compose -f docker-compose.example.yml up --build
+```
+
+(`make` requires Git Bash or WSL on Windows. If `make` isn't installed: `choco install make` or `winget install GnuWin32.Make`.)
 
 ## Local development end-to-end
 
@@ -117,7 +142,7 @@ Redis is optional in dev — rate limiting and token blacklist degrade silently 
 
 | Method | Path | Auth | Rate Limited | Description |
 |--------|------|------|--------------|-------------|
-| POST | `/users/create` | No | 5/hr per IP | Register a new user |
+| POST | `/users` | No | 5/hr per IP | Register a new user |
 | GET | `/users/me` | Bearer | No | Get authenticated user profile |
 | PATCH | `/users/me` | Bearer | No | Update profile (first_name, last_name) |
 | DELETE | `/users/me` | Bearer | 5/hr per IP | Delete own account (requires password) |
@@ -165,18 +190,6 @@ All admin endpoints require the `admin` role.
 
 See `.env.example` for a complete template.
 
-
-## Architecture Diagrams
-
-See [Architecture Diagrams](docs/architecture-diagrams.md) for detailed Mermaid diagrams covering:
-
-1. **System Context** — auth-system and its external dependencies
-2. **Application Layer Architecture** — service layer pattern (routes → services → repos → DB)
-3. **Database Schema** — ER diagram (users, pending_actions, oauth_accounts)
-4. **Authentication & Token Flow** — login, authenticated requests, refresh, logout
-5. **Password Reset Flow** — forgot → validate code → reset
-6. **Email Verification Flow** — registration → verify via code
-7. **Auth Dependency & RBAC** — token validation and role checking
 
 ## RBAC
 

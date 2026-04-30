@@ -82,7 +82,6 @@
   - Inconsistent commit: bool parameter on repo update functions (update_user_role, update_user_profile hard-commit; others don't).
   - Unused logger in auth_routes.py, missing audit log on /logout (line 87–90).
   - Mixed sync/async on similar endpoints in auth_routes.py with no clear boundary.
-  - /users/create is non-RESTful (verb in URL).
   - Cookie names + 600-second OAuth state TTL hardcoded in auth_routes.py 5–9 times.
   - Literal["user", "admin"] in admin_schema.py:6 instead of referencing UserRole enum.
   - Repeated Field(min_length=8, max_length=128) for password across 4 schema files.

@@ -15,7 +15,13 @@ _test_public_pem = _test_private_key.public_key().public_bytes(
 ).decode()
 
 # Set test environment variables BEFORE any app imports
-os.environ.setdefault("DATABASE_URL", "postgresql://postgres:postpostgres23582358@localhost:5432/fastapiapp_test")
+# TEST_DATABASE_URL takes precedence so in-container test runs can target a
+# different database than the app's runtime DATABASE_URL.
+_test_db_url = os.environ.get("TEST_DATABASE_URL")
+if _test_db_url:
+    os.environ["DATABASE_URL"] = _test_db_url
+else:
+    os.environ.setdefault("DATABASE_URL", "postgresql://postgres:postpostgres23582358@localhost:5432/fastapiapp_test")
 os.environ["JWT_PRIVATE_KEY"] = _test_private_pem
 os.environ["JWT_PUBLIC_KEY"] = _test_public_pem
 os.environ["JWT_ALGORITHM"] = "RS256"

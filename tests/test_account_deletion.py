@@ -94,7 +94,7 @@ def test_delete_account_email_reusable(auth_client, db_session):
     assert resp.status_code == 204
 
     register_resp = client.post(
-        "/api/users/create",
+        "/api/users",
         json={
             "first_name": "New",
             "last_name": "User",

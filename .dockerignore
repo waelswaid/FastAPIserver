@@ -2,7 +2,7 @@
 .env.*
 .git/
 tests/
-test-client/
+dev-client/
 docs/
 __pycache__/
 *.pyc

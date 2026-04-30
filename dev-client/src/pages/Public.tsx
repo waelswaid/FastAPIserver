@@ -19,7 +19,7 @@ export default function Public() {
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <Form
         title="Register"
-        onSubmit={async (v) => request("POST", "/api/users/create", v)}
+        onSubmit={async (v) => request("POST", "/api/users", v)}
       >
         {field("first_name")}
         {field("last_name")}

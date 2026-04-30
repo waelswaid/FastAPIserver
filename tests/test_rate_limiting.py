@@ -84,13 +84,13 @@ def test_login_global_rate_limit(client, create_test_user):
 def test_registration_rate_limit(client):
     for i in range(5):
         resp = client.post(
-            "/api/users/create",
+            "/api/users",
             json={"first_name": f"User", "last_name": f"Name{i}", "email": f"reg{i}@example.com", "password": "securepass123"},
         )
         assert resp.status_code != 429, f"Request {i+1} was rate-limited unexpectedly"
 
     resp = client.post(
-        "/api/users/create",
+        "/api/users",
         json={"first_name": "User", "last_name": "Name5", "email": "reg5@example.com", "password": "securepass123"},
     )
     assert resp.status_code == 429
