@@ -1,4 +1,4 @@
-.PHONY: help bootstrap backend-up frontend-up down logs restart build \
+.PHONY: help bootstrap backend-up frontend-up frontend-restart down logs restart build \
         test test-cov test-db shell psql redis migrate admin
 
 help:  ## Show this help
@@ -16,8 +16,11 @@ backend-up:  ## Start backend stack (hot reload)
 frontend-up:  ## Start dev-client (Vite on :5173)
 	docker compose --profile frontend up -d
 
+frontend-restart:  ## Restart dev-client (use after editing vite.config or adding deps)
+	docker compose --profile frontend restart dev-client
+
 down:  ## Stop and remove all containers (backend + frontend)
-	docker compose down
+	docker compose --profile frontend down
 
 logs:  ## Tail app logs (dev codes print here)
 	docker compose logs -f app

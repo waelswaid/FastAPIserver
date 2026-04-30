@@ -2,21 +2,26 @@ import { useEffect, useState } from "react";
 import Public from "./pages/Public";
 import Account from "./pages/Account";
 import Admin from "./pages/Admin";
-import { setToken, getToken, clearToken } from "./auth";
+import Inspect from "./pages/Inspect";
+import { setToken, getToken, clearToken, subscribe } from "./auth";
 
-type Tab = "public" | "account" | "admin";
+type Tab = "public" | "account" | "admin" | "inspect";
 
 export default function App() {
   const [tab, setTab] = useState<Tab>("public");
-  const [, force] = useState(0);
+  const [token, setTokenState] = useState<string | null>(getToken());
+
+  useEffect(() => {
+    const unsub = subscribe(() => setTokenState(getToken()));
+    return unsub;
+  }, []);
 
   useEffect(() => {
     if (window.location.pathname === "/oauth-callback") {
       const params = new URLSearchParams(window.location.search);
-      const token = params.get("token");
-      if (token) {
-        setToken(token);
-        force((n) => n + 1);
+      const t = params.get("token");
+      if (t) {
+        setToken(t);
       }
       window.history.replaceState({}, "", "/");
     }
@@ -30,14 +35,8 @@ export default function App() {
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-bold">auth-system dev client</h1>
         <div className="text-xs text-gray-600">
-          {getToken() ? (
-            <button
-              className="underline"
-              onClick={() => {
-                clearToken();
-                force((n) => n + 1);
-              }}
-            >
+          {token ? (
+            <button type="button" className="underline" onClick={() => clearToken()}>
               clear token
             </button>
           ) : (
@@ -46,13 +45,15 @@ export default function App() {
         </div>
       </div>
       <nav className="flex gap-2 border-b border-gray-200 mb-4">
-        <button onClick={() => setTab("public")} className={tabClasses(tab === "public")}>Public</button>
-        <button onClick={() => setTab("account")} className={tabClasses(tab === "account")}>Account</button>
-        <button onClick={() => setTab("admin")} className={tabClasses(tab === "admin")}>Admin</button>
+        <button type="button" onClick={() => setTab("public")} className={tabClasses(tab === "public")}>Public</button>
+        <button type="button" onClick={() => setTab("account")} className={tabClasses(tab === "account")}>Account</button>
+        <button type="button" onClick={() => setTab("admin")} className={tabClasses(tab === "admin")}>Admin</button>
+        <button type="button" onClick={() => setTab("inspect")} className={tabClasses(tab === "inspect")}>Inspect</button>
       </nav>
       {tab === "public" && <Public />}
       {tab === "account" && <Account />}
       {tab === "admin" && <Admin />}
+      {tab === "inspect" && <Inspect />}
     </div>
   );
 }

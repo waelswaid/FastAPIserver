@@ -2,6 +2,7 @@ import logging
 
 import requests
 from app.core.config import settings
+from app.utils import dev_codes
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +20,7 @@ def _log_dev_email(email_type: str, recipient: str, code: str, link: str) -> Non
         "audit: event=dev_email type=%s recipient=%s code=%s link=%s",
         email_type, recipient, code, link,
     )
+    dev_codes.record(email_type, recipient, code, link)
 
 
 def send_password_reset_email(to_email: str, code: str) -> None:

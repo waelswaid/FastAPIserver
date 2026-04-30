@@ -22,4 +22,4 @@ dist/
 build/
 *.egg-info/
 SECURITY_ISSUES.txt
-docs/
+docs/superpowers/

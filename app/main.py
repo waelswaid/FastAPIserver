@@ -95,6 +95,10 @@ app.include_router(user_router, prefix="/api")
 app.include_router(auth_router, prefix="/api")
 app.include_router(admin_router, prefix="/api/admin")
 
+if settings.ENVIRONMENT != "production":
+    from app.api.routes.dev_routes import dev_router
+    app.include_router(dev_router, prefix="/api")
+
 
 
 """
